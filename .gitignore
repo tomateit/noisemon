@@ -1,0 +1,10 @@
+.venv
+.vscode
+*.pyc
+.env
+__pycache__/
+*-checkpoint.ipynb
+meta/
+data/
+.ipynb_checkpoints/
+*.txt

@@ -1,0 +1,8 @@
+.env
+.vscode
+.venv
+.ipynb_checkpoints
+.git
+docs/
+meta/
+notebooks/

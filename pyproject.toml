@@ -1,0 +1,28 @@
+[tool.poetry]
+name = "noisemon"
+version = "0.2.0"
+description = "Module for listening informational noise and making some stats"
+authors = ["Max Ermakov <maksim_ermakov@protonmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+pydantic = "^1.8.2"
+fastapi = "^0.66.0"
+uvicorn = {extras = ["standard"], version = "^0.14.0"}
+python-dotenv = "^0.18.0"
+regex = "^2021.7.6"
+spacy = "^3.1.0"
+SPARQLWrapper = "^1.8.5"
+Telethon = "^1.23.0"
+SQLAlchemy = "^1.4.22"
+pyzmq = "^22.1.0"
+
+
+[tool.poetry.dev-dependencies]
+ipykernel = "^6.0.1"
+pylint = "^2.9.3"
+notebook = "^6.4.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
