@@ -1,7 +1,8 @@
 # Project that listens to and makes some notes
 
-## This is version 1 of the app; the main nuances, which will not be the case in further versions, are the following:
-+ The app intends to retrieve data by itself
+#### This is version 1 of the app; the main nuances, which will not be the case in further versions, are the following:
++ The app intends to retrieve data by itself (will be connected to common data infrastructure later)
++ ...so the only data source now is telegram channels.
 + App uses local sqlite database as a form of a cache
 
 ### What we do:
