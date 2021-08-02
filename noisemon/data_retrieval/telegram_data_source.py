@@ -1,13 +1,13 @@
+import time
+import logging
 import zmq
 import telethon
 from telethon import TelegramClient
 from telethon.tl.functions.channels import JoinChannelRequest
-import time
 from settings import settings
 from models.data_chunk import DataChunk
 # These example values won't work. You must get your own api_id and
 # api_hash from https://my.telegram.org, under API Development.
-import logging
 
 
 class TelegramDataSource():

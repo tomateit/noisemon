@@ -25,3 +25,7 @@
 ### Next on the list:
 + API
 + UI
+
+-----------
+### To run tests
+`python -m unittest discover ./noisemon -p '*tests.py'`
