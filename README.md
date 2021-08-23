@@ -21,7 +21,9 @@
 - Demonstrate aggregated stats on a webpage
 
 ### Currently working on:
-+ Data retrieval and processing
++ Entity mention saving
++ Entity disambiguation
++ Make use of metadata (hashtags)
 ### Next on the list:
 + API
 + UI

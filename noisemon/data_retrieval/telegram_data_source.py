@@ -6,7 +6,7 @@ from telethon import TelegramClient
 from telethon.tl.functions.channels import JoinChannelRequest, LeaveChannelRequest
 from telethon import events
 from settings import settings
-from models.data_chunk import DataChunk
+from schemas import DataChunk
 import asyncio
 from functools import lru_cache
 # These example values won't work. You must get your own api_id and

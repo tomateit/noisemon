@@ -1,7 +1,9 @@
 import zmq
-from models.data_chunk import DataChunk
+from schemas import DataChunk
+from database import SessionLocal, engine
 import logging
 import spacy
+import crud
 
 class Processor():
     socket: zmq.Socket
@@ -9,8 +11,9 @@ class Processor():
     # nlp: spacy.lang.ru.Russian
 
     def __init__(self):
-        # self.nlp = spacy.load("ru_core_news_lg")
-        pass
+        self.nlp = spacy.load("ru_core_news_lg")
+        self.db = SessionLocal()
+        
 
     def connect_to_queue(self):
         self.context = zmq.Context.instance()
@@ -31,7 +34,15 @@ class Processor():
         #     self.process_data(data)
 
     def process_data(self, data: DataChunk):
-        # doc = self.nlp(data)
-        # for ent in doc.ents:
-        #     print(ent.text, ent.start_char, ent.end_char, ent.label_)
+        doc = self.nlp(data["text"])
         print(data)
+        entity_set = set()
+        for ent in doc.ents:
+            print(ent.text, ent.label_)
+            if ent.label_ == "ORG":
+                entity_set.add(ent.text)
+                
+
+        for entity_text in entity_set:
+            print("Detected organization: ", entity_text)
+            crud.create_entity(self.db, entity_text)

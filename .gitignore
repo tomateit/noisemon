@@ -8,3 +8,5 @@ meta/
 data/
 .ipynb_checkpoints/
 *.txt
+*.db
+*.session

@@ -33,6 +33,7 @@ def main():
     finally:
         myprocessor_process.close()
         mytelegramsource_process.close()
+        myprocessor.db.close()
 
 
 if __name__ == '__main__':
