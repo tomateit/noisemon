@@ -17,7 +17,7 @@
     - entity matching
     - Check if there is a ticker
 3. Store known orgs and relevant stats
-- Put into db chinks in form of "organization: date of mention"
+- Put into db chunks in form of "organization: date of mention"
 - Demonstrate aggregated stats on a webpage
 
 ### Currently working on:
@@ -31,3 +31,13 @@
 -----------
 ### To run tests
 `python -m unittest discover ./noisemon -p '*tests.py'`
+
+-------------
+### Organization storage
++ TABLE: ENTITIES
+    - QID
+    - HUMAN READABLE NAME
++ TBALE: TEXTS # just text for dev purposes
++ TABLE: MENTIONS:
+    - QID
+    - DATE
