@@ -3,16 +3,16 @@ import spacy
 from typing import List, Tuple
 import regex
 import reticker
-from data_processing.wikidata import Wikidata
+# from data_processing.wikidata import Wikidata
 
 
 class TickerProcessor():
     """
-    Class extracts 
+    Class extracts tickers from texts
     """
     def __init__(self):
         self.extractor = reticker.TickerExtractor()
-        self.wikidata = Wikidata()
+        # self.wikidata = Wikidata()
         
         
 
@@ -22,10 +22,9 @@ class TickerProcessor():
         Just simple regex extraction
         """
         ticker_set = set(self.extractor.extract(text))
-                
+        
         return list(ticker_set)
 
-    def lookup_ticker_in_knowledgebase(self, ticker: str) -> List:
-        #! TODO Make local lookup first!
-        # TODO Add dbpedia as well
-        return self.wikidata.lookup_companies_by_ticker(ticker)
+    # def lookup_ticker_in_knowledgebase(self, ticker: str) -> List:
+    #     #! Remove it cuz not class-specific
+    #     return self.wikidata.lookup_companies_by_ticker(ticker)

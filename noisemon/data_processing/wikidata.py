@@ -4,12 +4,14 @@ from typing import List, Dict
 from time import sleep
 from urllib.error import HTTPError
 import logger
+from functools import lru_cache
 
 class Wikidata:
     def __init__(self):
         self.sparql = SPARQLWrapper("http://query.wikidata.org/sparql")
         self.sparql.setReturnFormat(JSON)
 
+    @lru_cache(maxsize=2048)
     def lookup_companies_by_ticker(self, ticker: str) -> List:
 
         query = """
@@ -34,3 +36,6 @@ class Wikidata:
                 return self.lookup_companies_by_ticker(ticker)
 
         return results["results"]["bindings"]
+
+    def lookup_companies_by_id(self, qid):
+        pass
