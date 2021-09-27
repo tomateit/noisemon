@@ -1,0 +1,40 @@
+download:
+  cmd: python -m spacy run download
+  script:
+    - ./scripts/download_spacy_model.sh
+  deps: []
+  outs: []
+  spacy_version: 3.1.0
+  spacy_git_version: 530b5d72f
+kb:
+  cmd: python -m spacy run kb
+  script:
+    - python ./scripts/create_kb.py ./assets/entities.csv en_core_web_md ./temp/my_kb
+      ./temp/my_nlp/
+  deps:
+    - path: assets/entities.csv
+      md5: f24d983db0cd3d180a135bbbbb0d0b8a
+  outs:
+    - path: temp/my_kb
+      md5: 65107bf5284d1ca51c264e8fad07e0af
+    - path: temp/my_nlp
+      md5: 2ad9fc049d46eede7fbd6c8113f0ccb0
+    - path: scripts/create_kb.py
+      md5: 6145d3e63a7cd9c08e5da46de97ee647
+  spacy_version: 3.1.0
+  spacy_git_version: 530b5d72f
+corpus:
+  cmd: python -m spacy run corpus
+  script:
+    - python ./scripts/create_corpus.py ./assets/emerson_annotated_text.jsonl ./temp/my_nlp/
+      corpus/train.spacy corpus/dev.spacy
+  deps:
+    - path: assets/emerson_annotated_text.jsonl
+      md5: 2863586d7b648536f84280648ab32490
+  outs:
+    - path: corpus/train.spacy
+      md5: e1896cfe19791ab504887b95b3633866
+    - path: corpus/dev.spacy
+      md5: eea3ab62fd7402721680f7b13545152e
+  spacy_version: 3.1.0
+  spacy_git_version: 530b5d72f

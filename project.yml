@@ -1,0 +1,68 @@
+title: 'Disambiguation of "Emerson" mentions in sentences (Entity Linking)'
+description: "Transformer-based pipeline for company mention disambiguation"
+
+vars:
+  name: "nel_org"
+  config: "nel_trf.cfg"
+  nlp_model_path: "training/best-model/ru-rubert-trf"
+  kb: "noisemon_kb"
+  train: "train.spacy"
+  dev: "dev.spacy"
+  test: "test.spacy"
+  input_path: "data/05-labeled"
+  version: "0.0.4"
+
+# These are the directories that the project needs. The project CLI will make
+# sure that they always exist.
+directories: ["corpus", "training", "data", "configs", "scripts", "notebooks", "temp"]
+
+workflows:
+  training:
+    - corpus
+    - train
+    - evaluate
+
+
+commands:
+  - name: download
+    help: "Download a spaCy model with pretrained vectors and NER component"
+    script:
+      - "./scripts/download_spacy_model.sh"
+
+  - name: corpus
+    help: "Create a training and dev set, and KB from the manually annotated data"
+    script:
+      - "python ./scripts/parse_data.py --input-path ${vars.input_path} --outut-folder ./corpus/ --most-recent"
+    deps:
+      - "${vars.input_path}"
+    outputs_no_cache:
+      - "corpus/${vars.train}"
+      - "corpus/${vars.dev}"
+      - "corpus/${vars.test}"
+      - "corpus/${vars.kb}"
+
+
+  - name: train
+    help: "Train a new Entity Linking component"
+    script:
+      - "python -m spacy train configs/${vars.config} --output training --paths.train corpus/${vars.train} --paths.dev corpus/${vars.dev} --paths.kb assets/${vars.kb} --paths.base_nlp ${vars.nlp_model_path} -c scripts/custom_functions.py"
+    deps:
+      - "corpus/${vars.train}"
+      - "corpus/${vars.dev}"
+      - "corpus/${vars.test}"
+      - "corpus/${vars.kb}"
+      - "${vars.nlp_model_path}"
+
+  - name: evaluate
+    help: "Final evaluation on the dev data and printing the results"
+    script:
+      - "python ./scripts/evaluate.py ./training/model-best/ assets/${vars.test}"
+    deps:
+      - "training/model-best"
+      - "corpus/${vars.test}"
+
+  # - name: clean
+  #   help: "Remove intermediate files"
+  #   script:
+  #     - "rm -rf training/*"
+  #     - "rm -rf corpus/*"
