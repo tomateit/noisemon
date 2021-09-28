@@ -16,9 +16,9 @@ class Processor():
     def __init__(self):
         self.nlp = spacy.load("ru_core_news_lg")
         self.db = SessionLocal()
-        self.ner_extractor = NerExtractor() 
+        self.ner_extractor = NerExtractor(nlp=self.nlp) 
         self.ticker_processor = TickerProcessor()
-        self.entity_linker = EntityLinker()
+        self.entity_linker = EntityLinker(nlp=self.nlp)
 
     def connect_to_queue(self):
         self.context = zmq.Context.instance()
@@ -39,20 +39,27 @@ class Processor():
         #     self.process_data(data)
 
     def process_data(self, data: DataChunk):
-        # 1. Perform ticker and NER lookups
-        ners = self.ner_extractor.extract(data["text"])
-        tickers = self.ticker_processor.extract_tickers(data["text"])
-        # 2. For tickers extract company names
+        text = data["text"]
+        doc = self.nlp.make_doc(text)
+        # 1. Entity Linking phase
+        doc = self.ner_extractor.extract(doc)
+        doc = self.entity_linker.link_entities(doc)
+        
+        # 2. Ticker matching phase
+        tickers = self.ticker_processor.extract_tickers(text)
+        # 2.1 For tickers extract company names
         company_names = list(map(self.ticker_processor.lookup_ticker_in_knowledgebase, tickers))
         company_to_ticker_map = dict(zip(company_names, tickers))
         # 3. Match them with extracted organizations
-        matched_pairs, unmatched_orgs, unmatched_tickers = self.entity_linker.match_names(ners, company_to_ticker_map)
+        # matched_pairs, unmatched_orgs, unmatched_tickers = self.entity_linker.match_names(ners, company_to_ticker_map)
         # CASE 1 : everything exactly matched -> horray, populate training dataset
         # CASE 2 : some of NERS do not exist in tickets -> human check, penalize NER
         # CASE 3 : ???
 
                       
 
-        for entity_text in entity_set:
-            print("Detected organization: ", entity_text)
-            crud.create_entity(self.db, entity_text)
+        for entity in doc.ents:
+            if entity.label_ == "ORG":
+                print("Detected organization: ", entity.text)
+                crud.create_entity(self.db, entity.text)
+                crud.create_entity_mention(self.db, entity.kb_id_, data["timestamp"], source=data["origin"])
