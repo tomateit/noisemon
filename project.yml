@@ -2,7 +2,7 @@ title: 'Disambiguation of "Emerson" mentions in sentences (Entity Linking)'
 description: "Transformer-based pipeline for company mention disambiguation"
 
 vars:
-  name: "nel_org"
+  name: "nel_trf"
   config: "nel_trf.cfg"
   nlp_model_path: "training/best-model/ru-rubert-trf"
   kb: "noisemon_kb"
