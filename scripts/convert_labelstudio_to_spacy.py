@@ -9,9 +9,8 @@ from pydantic import BaseModel
 import scipy.special
 msg = Printer()
 
-nlp = spacy.load("ru_core_news_sm")
 
-vocab = Vocab()
+
 
 
 class LabelStudioAnnotation(BaseModel):
@@ -56,8 +55,8 @@ class LabelStudioToSpacyConverter():
     ls_label_map = {"Organization": "ORG"}
 
     def __init__(self,
-        nlp=nlp,
-        extensions: List[str]=["rel"],
+        nlp,
+        extensions: List[str]=["rel", "trf_data"],
         preprocessor: Callable[[str], str] = None
         ):
         self.nlp = nlp
@@ -80,7 +79,12 @@ class LabelStudioToSpacyConverter():
     #         print(result)
             if result["type"] == "labels":
                 try:
-                    entity = doc.char_span(result["value"]["start"], result["value"]["end"], label=self.ls_label_map[result["value"]["labels"][0]])
+                    
+                    entity = doc.char_span(
+                        result["value"]["start"], 
+                        result["value"]["end"], 
+                        label=self.ls_label_map[result["value"]["labels"][0]]
+                    )
                     assert entity, "Entity failed to be created. Probably misaligned markup"
                     entities.append(entity)
                 except:

@@ -1,5 +1,5 @@
-title: 'Disambiguation of "Emerson" mentions in sentences (Entity Linking)'
-description: "Transformer-based pipeline for company mention disambiguation"
+title: 'Disambiguation of entity mentions in sentences (Entity Linking)'
+description: "Transformer-based pipeline for entity mention disambiguation"
 
 vars:
   name: "nel_trf"
@@ -45,13 +45,12 @@ commands:
   - name: train
     help: "Train a new Entity Linking component"
     script:
-      - "python -m spacy train configs/${vars.config} --output training --paths.train corpus/${vars.train} --paths.dev corpus/${vars.dev} --paths.kb assets/${vars.kb} --paths.base_nlp ${vars.nlp_model_path} -c scripts/custom_functions.py"
+      - "python -m spacy train configs/${vars.config} --output training --paths.train corpus/${vars.train} --paths.dev corpus/${vars.dev} --paths.kb corpus/${vars.kb} --paths.base_nlp ${vars.nlp_model_path} -c scripts/custom_functions.py"
     deps:
       - "corpus/${vars.train}"
       - "corpus/${vars.dev}"
       - "corpus/${vars.test}"
       - "corpus/${vars.kb}"
-      - "${vars.nlp_model_path}"
 
   - name: evaluate
     help: "Final evaluation on the dev data and printing the results"
