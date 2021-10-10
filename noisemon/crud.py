@@ -20,6 +20,18 @@ def create_entity(db: Session, entity: str):
     db.refresh(db_Entity)
     return db_Entity
 
+def create_entity_mention(db: Session, entity_qid: str, timestamp: str, source: str):
+    db_Mention = models.Mention(entity_qid=entity_qid, timestamp=timestamp, source=source)
+    db.add(db_Mention)
+    db.commit()
+    db.refresh(db_Mention)
+    return db_Mention
+    # mention_id = Column(String, name="qid", primary_key=True, default=generate_uuid)
+    # source = Column(String)
+    # timestamp = Column(TIMESTAMP)
+    # entity_qid = Column(String, ForeignKey("entities.qid"))
+    # entity = relationship("Entity", b
+
 
 # def get_mentions(db: Session, skip: int = 0, limit: int = 100):
 #     return db.query(models.Item).offset(skip).limit(limit).all()

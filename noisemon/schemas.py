@@ -8,6 +8,7 @@ class DataChunk(BaseModel):
     origin: str
     text: str
     raw_text: str
+    timestamp: str
 
 class EntityType(str, Enum):
     ORGANIZATION = "org"

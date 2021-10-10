@@ -15,18 +15,19 @@ def generate_uuid():
 
 class Entity(Base):
     __tablename__ = "entities"
-    id = Column(String, name="id", primary_key=True, default=generate_uuid)
+    qid = Column(String, name="qid", primary_key=True)
     name = Column(String, unique=False, index=True)
     type = Column(Enum(EntityType))
     mentions = relationship("Mention", back_populates="entity")
 
 class Mention(Base):
     __tablename__ = "mentions"
-    id = Column(String, name="id", primary_key=True, default=generate_uuid)
+    mention_id = Column(String, name="qid", primary_key=True, default=generate_uuid)
     source = Column(String)
     timestamp = Column(TIMESTAMP)
     
-    entity_id = Column(String, ForeignKey("entities.id"))
+    entity_qid = Column(String, ForeignKey("entities.qid"))
     entity = relationship("Entity", back_populates="mentions")
+
 
 
