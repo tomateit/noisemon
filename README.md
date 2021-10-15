@@ -1,4 +1,7 @@
-# Project that listens to and makes some notes
+# Project that listens and makes some notes
+The project is very very WIP; I do research in `notebooks/`, you can check out:
+- `building_faiss_index` - how to do entity linking with faiss and transformer
+
 
 #### This is version 1 of the app; the main nuances, which will not be the case in further versions, are the following:
 + The app intends to retrieve data by itself (will be connected to common data infrastructure later)
@@ -13,7 +16,7 @@
     2. Check requirements (e.g. not to be a repost or contain blacklisted stuff)
     3. Parse and analyze
 2. Matching to organizations
-- The entitites are retrieved from dbpedia
+- The entitites are retrieved from wikidata
     - entity matching
     - Check if there is a ticker
 3. Store known orgs and relevant stats
@@ -22,8 +25,9 @@
 
 ### Currently working on:
 + Entity mention saving
-+ Entity disambiguation
++ Entity disambiguation (linking)
 + Make use of metadata (hashtags)
+
 ### Next on the list:
 + API
 + UI
