@@ -9,6 +9,7 @@
 *.session
 *.dill
 *.pickle
+*.binary
 
 __pycache__/
 .ipynb_checkpoints/
