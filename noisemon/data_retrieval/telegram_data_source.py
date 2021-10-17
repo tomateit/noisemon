@@ -68,10 +68,8 @@ class TelegramDataSource():
         # self.socket.send_json({"text": "lalala", "raw_text": "very raw", "origin": 123546})
         @self.client.on(events.NewMessage(forwards=False, incoming=True))
         async def event_listener(message_event):
-            # print(message_event)
-            # entity = await self.client.get_entity(message_event.message.peer_id)
-            # origin = entity.username
-            data = self.reshape_message(message_event)
+            entity = await self.client.get_entity(message_event.message.peer_id)
+            data = self.reshape_message(message_event, origin=entity.username)
 
             self.socket.send_json(dict(data))
         
@@ -96,11 +94,16 @@ class TelegramDataSource():
 
         
 
-    def reshape_message(self, message: telethon.tl.custom.message.Message) -> DataChunk:
+    def reshape_message(self, message: telethon.tl.custom.message.Message, **kwargs) -> DataChunk:
+        print(message)
         raw_text = message.raw_text
         text = message.text
-        origin = message.chat_id
-        return DataChunk(raw_text=raw_text, text=text, origin=origin)
+        origin = "https://t.me/" + kwargs["origin"] + "/" + str(message.id)
+        timestamp = message.date.isoformat()
+        data = DataChunk(raw_text=raw_text, text=text, origin=origin, timestamp=timestamp)
+        # print("------->", data)
+        
+        return data
     
     # @lru_cache
     # def get_username_from_id(self, id_code):

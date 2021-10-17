@@ -1,12 +1,9 @@
 from sqlalchemy.orm import Session
 import models, schemas
+from datetime import datetime
 
 # def get_entities(db: Session, Entity_id: int):
 #     return db.query(models.Entity).filter(models.Entity.id == Entity_id).first()
-
-
-# def get_Entity_by_email(db: Session, email: str):
-#     return db.query(models.Entity).filter(models.Entity.email == email).first()
 
 
 def get_entities(db: Session, skip: int = 0, limit: int = 100):
@@ -21,6 +18,7 @@ def create_entity(db: Session, entity: str):
     return db_Entity
 
 def create_entity_mention(db: Session, entity_qid: str, timestamp: str, source: str):
+    timestamp = datetime.fromisoformat(timestamp)
     db_Mention = models.Mention(entity_qid=entity_qid, timestamp=timestamp, source=source)
     db.add(db_Mention)
     db.commit()

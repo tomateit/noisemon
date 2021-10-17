@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from enum import Enum
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 from datetime import datetime
 from database import Base
 
@@ -8,7 +8,7 @@ class DataChunk(BaseModel):
     origin: str
     text: str
     raw_text: str
-    timestamp: str
+    timestamp: str # datetime is not json serializable
 
 class EntityType(str, Enum):
     ORGANIZATION = "org"
