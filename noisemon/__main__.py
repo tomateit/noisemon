@@ -1,11 +1,12 @@
+import sys
 import uvicorn
+print(sys.path)
 from multiprocessing import Process
 from settings import settings
 from data_processing.processor import Processor
 from data_retrieval.telegram_data_source import TelegramDataSource
 import zmq
 import asyncio
-
 # context = zmq.Context()
 def main():
     myprocessor = Processor()
@@ -28,7 +29,8 @@ def main():
             "app:app",
             host=settings.HOST,
             port=settings.PORT,
-            reload=settings.ENVIRONMENT != "production"
+            # reload=settings.ENVIRONMENT != "production"
+            reload=False
         )
     finally:
         myprocessor_process.close()
@@ -37,4 +39,5 @@ def main():
 
 
 if __name__ == '__main__':
+    
     main()
