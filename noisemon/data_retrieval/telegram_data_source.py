@@ -33,51 +33,19 @@ class TelegramDataSource():
         self.socket = self.context.socket(zmq.PUB)
         self.socket.connect("tcp://127.0.0.1:2001")
 
-    async def initialize_account(self):
-        # 1. Get all subscriprion on channel
-        all_subscriptions_map = dict()
-        async for dialog in self.client.iter_dialogs():
-            if not dialog.is_group and dialog.is_channel:
-                entity = await self.client.get_entity(dialog.id)
-                username = entity.username
-                if username == "telegram":
-                    continue
-                print(dialog.name, dialog.id, username)
-                all_subscriptions_map[username] = entity
-        
-        target_subscriptions = set()
-        for channel in settings.TelegramConfig.get_channels_list():
-            target_subscriptions.add(channel)
-            print(channel)
-        
-        # 2. Compare with target state list
-        shall_be_subscribed = target_subscriptions.difference(all_subscriptions_map.keys())
-        shall_be_unsubscribed = set(all_subscriptions_map.keys()).difference(target_subscriptions)
-        
-        # 3. Actualize account state
-        print("This channels shall be added: ", shall_be_subscribed)
-        for channel in shall_be_subscribed:
-            await self.client(JoinChannelRequest(channel))
-
-        print("This channels shall be quit: ", shall_be_unsubscribed)
-        for username in shall_be_unsubscribed:
-            await self.client(LeaveChannelRequest(all_subscriptions_map[username]))
-
 
     async def recieve_messages(self):
         # self.socket.send_json({"text": "lalala", "raw_text": "very raw", "origin": 123546})
         @self.client.on(events.NewMessage(forwards=False, incoming=True))
         async def event_listener(message_event):
             entity = await self.client.get_entity(message_event.message.peer_id)
+            print(f"Got a message from: {entity.username}")
+            if not entity.username:
+                return
+            # print(message_event)
             data = self.reshape_message(message_event, origin=entity.username)
-
             self.socket.send_json(dict(data))
         
-        # time.sleep(3)
-        # for message in await self.client.get_messages():
-        #     data = self.reshape_message(message)
-        #     self.socket.send_json(data)
-
         await self.client.run_until_disconnected()
 
     def run(self):
@@ -95,7 +63,7 @@ class TelegramDataSource():
         
 
     def reshape_message(self, message: telethon.tl.custom.message.Message, **kwargs) -> DataChunk:
-        print(message)
+        # print(message)
         raw_text = message.raw_text
         text = message.text
         origin = "https://t.me/" + kwargs["origin"] + "/" + str(message.id)
