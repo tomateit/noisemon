@@ -43,10 +43,14 @@ class EntityLinker():
 
         _, I = self.faiss_index.search(entity_vectors, self.k_neighbors) 
         # I is (len(spans), k)
-        qid_candidates: List[List[str]] = [
-            [self.index_to_qid_map[str(vector_index)] for vector_index in span_vec_idx_candidates]
-            for span_vec_idx_candidates in list(I)
-        ]
+        qid_candidates: List[List[str]] = []
+        for span_vec_idx_candidates in list(I):
+            buff = []
+            for vector_index in span_vec_idx_candidates:
+                qid_candidate = self.index_to_qid_map[str(vector_index)]
+                buff.append(qid_candidate)
+            qid_candidates.append(buff)
+
         # Strategy: choosing majority
         for candidate_list, entity in zip(qid_candidates, entities):
             QID, count = Counter(candidate_list).most_common(1)[0]
