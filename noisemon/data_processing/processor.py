@@ -1,3 +1,4 @@
+from pathlib import Path
 import zmq
 from schemas import DataChunk
 from database import SessionLocal, engine
@@ -18,7 +19,11 @@ class Processor():
         self.db = SessionLocal()
         self.ner_extractor = NerExtractor(nlp=self.nlp) 
         self.ticker_processor = TickerProcessor()
-        self.entity_linker = EntityLinker(nlp=self.nlp)
+        self.entity_linker = EntityLinker(
+            faiss_index_path = Path("./bin/2021-10-17-12-58-54_faiss_index_222_vectors.binary"),
+            index_to_qid_map_path = Path("./bin/2021-10-17-12-58-54_index_to_qid_mapping.json"),
+            qid_to_aliases_path = Path("./bin/2021-10-17-12-58-54_qid_to_aliases_mapping.json"),
+        )
 
     def connect_to_queue(self):
         self.context = zmq.Context.instance()
@@ -43,23 +48,31 @@ class Processor():
         doc = self.nlp.make_doc(text)
         # 1. Entity Linking phase
         doc = self.ner_extractor.extract(doc)
-        doc = self.entity_linker.link_entities(doc)
+        # doc = self.entity_linker.link_entities(doc)
         
         # 2. Ticker matching phase
         tickers = self.ticker_processor.extract_tickers(text)
         # 2.1 For tickers extract company names
-        company_names = list(map(self.ticker_processor.lookup_ticker_in_knowledgebase, tickers))
-        company_to_ticker_map = dict(zip(company_names, tickers))
+        # company_names = list(map(self.ticker_processor.lookup_ticker_in_knowledgebase, tickers))
+        # company_to_ticker_map = dict(zip(company_names, tickers))
         # 3. Match them with extracted organizations
         # matched_pairs, unmatched_orgs, unmatched_tickers = self.entity_linker.match_names(ners, company_to_ticker_map)
         # CASE 1 : everything exactly matched -> horray, populate training dataset
         # CASE 2 : some of NERS do not exist in tickets -> human check, penalize NER
         # CASE 3 : ???
+        # 4. Match ORG spans with QIDs
+        org_spans = [(entity.start_char, entity.end_char) for entity in doc.ents if entity.label_ == "ORG"]
+        qids = self.entity_linker(text, org_spans)
 
                       
-
-        for entity in doc.ents:
-            if entity.label_ == "ORG":
-                print("Detected organization: ", entity.text)
-                crud.create_entity(self.db, entity.text)
-                crud.create_entity_mention(self.db, entity.kb_id_, data["timestamp"], source=data["origin"])
+        
+        for entity, qid in zip(doc.ents, qids):
+            if qid:
+                print(f"Detected mention of {qid} as {entity.text}")
+                # crud.create_entity(self.db, entity.text)
+                # crud.create_entity_mention(self.db, entity.kb_id_, data["timestamp"], source=data["origin"])
+                crud.create_entity_mention(self.db, qid, data["timestamp"], source=data["origin"])
+        print("-------------------")
+        print("Text: ", text)
+        print("Detected entities: ", [ent.text for entity in doc.ents])
+        print("Recognized entities: ", qids)
