@@ -39,19 +39,22 @@ class Processor():
         
         while True:
             data = self.socket.recv_json()
+            logging.debug("Recieved data from socket")
             self.process_data(data)
         # for data in await self.socket.recv_json():
         #     self.process_data(data)
 
     def process_data(self, data: DataChunk):
-        text = data["text"]
+        text = data["raw_text"]
+        print("-------------------")
+        print("Text: ", text)
         doc = self.nlp.make_doc(text)
         # 1. Entity Linking phase
         doc = self.ner_extractor.extract(doc)
         # doc = self.entity_linker.link_entities(doc)
         
         # 2. Ticker matching phase
-        tickers = self.ticker_processor.extract_tickers(text)
+        # tickers = self.ticker_processor.extract_tickers(text)
         # 2.1 For tickers extract company names
         # company_names = list(map(self.ticker_processor.lookup_ticker_in_knowledgebase, tickers))
         # company_to_ticker_map = dict(zip(company_names, tickers))
@@ -62,9 +65,7 @@ class Processor():
         # CASE 3 : ???
         # 4. Match ORG spans with QIDs
         org_spans = [(entity.start_char, entity.end_char) for entity in doc.ents if entity.label_ == "ORG"]
-        qids = self.entity_linker(text, org_spans)
-
-                      
+        qids = self.entity_linker.link_entities(text, org_spans)                    
         
         for entity, qid in zip(doc.ents, qids):
             if qid:
@@ -72,7 +73,7 @@ class Processor():
                 # crud.create_entity(self.db, entity.text)
                 # crud.create_entity_mention(self.db, entity.kb_id_, data["timestamp"], source=data["origin"])
                 crud.create_entity_mention(self.db, qid, data["timestamp"], source=data["origin"])
-        print("-------------------")
-        print("Text: ", text)
-        print("Detected entities: ", [ent.text for entity in doc.ents])
-        print("Recognized entities: ", qids)
+        
+        print("Detected entities: ", [ent.text for ent in doc.ents])
+        print("Recognized entities: ", list(filter(bool, qids)))
+        print()
