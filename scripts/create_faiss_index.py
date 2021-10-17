@@ -67,14 +67,14 @@ def main(data_path: Path, output_folder: Path):
     mapping_output_name = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "_index_to_qid_mapping.json"
     output = str(output_folder/mapping_output_name)
     with open(output, "w") as fout:
-        json.dump(vector_index_to_qid, fout)
+        json.dump(vector_index_to_qid, fout, ensure_ascii=False)
     msg.good("Vector index to qid mapping was saved", "Location: " + output)
 
     aliases_output_name = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "_qid_to_aliases_mapping.json"
     output = str(output_folder/aliases_output_name)
     qid_to_alias = {qid: list(aliases) for qid, aliases in qid_to_alias.items()}
     with open(output, "w") as fout:
-        json.dump(qid_to_alias, fout)
+        json.dump(qid_to_alias, fout, ensure_ascii=False)
     msg.good("QID to aliases mapping was saved successfully", "Location: " + output)
 
 
