@@ -41,13 +41,21 @@ class EntityLinker():
         entity_vectors: numpy.ndarray = torch.vstack(entity_vectors).numpy()
         print("For provided entity spans, got following embeding matrix: ", entity_vectors.shape)
 
-        _, I = self.faiss_index.search(entity_vectors, self.k_neighbors) 
+        D, I = self.faiss_index.search(entity_vectors, self.k_neighbors) 
         # I is (len(spans), k)
         qid_candidates: List[List[str]] = []
         for span_vec_idx_candidates in list(I):
             buff = []
             for vector_index in span_vec_idx_candidates:
-                qid_candidate = self.index_to_qid_map[str(vector_index)]
+                try:
+                    qid_candidate = self.index_to_qid_map[str(vector_index)]
+                except KeyError as e:
+                    print("Key error")
+                    print(span_vec_idx_candidates)
+                    print(I)
+                    print(D)
+                    print(e)
+                    return []
                 buff.append(qid_candidate)
             qid_candidates.append(buff)
 
@@ -61,8 +69,12 @@ class EntityLinker():
             # We can not just return any QID.
             # If the entity is completely unknown there still will be a result
             # Thus check to be alike one of QID aliases
-            if self.similarity(entity, self.qid_to_aliases[QID]) < self.cutoff_threshold:
-                QID = None
+            try:
+                if self.similarity(entity, self.qid_to_aliases[QID]) < self.cutoff_threshold:
+                    QID = None
+            except KeyError:
+                print(candidate_list, QID)
+                continue
             detected_qids.append(QID)
 
         return detected_qids

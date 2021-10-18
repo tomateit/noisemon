@@ -1,4 +1,7 @@
+import warnings
+warnings.filterwarnings("ignore", category=UserWarning)
 from pathlib import Path
+from collections import defaultdict
 import zmq
 from schemas import DataChunk
 from database import SessionLocal, engine
@@ -63,17 +66,22 @@ class Processor():
         # CASE 1 : everything exactly matched -> horray, populate training dataset
         # CASE 2 : some of NERS do not exist in tickets -> human check, penalize NER
         # CASE 3 : ???
-        # 4. Match ORG spans with QIDs
-        org_spans = [(entity.start_char, entity.end_char) for entity in doc.ents if entity.label_ == "ORG"]
-        qids = self.entity_linker.link_entities(text, org_spans)                    
+
+        # 4. Match entity spans with QIDs
+        entities = [entity for entity in doc.ents if entity.label_ == "ORG"]
+        entity_spans = [(entity.start_char, entity.end_char) for entity in entities]
+        print("Detected entities: ", entities)
+        qids = self.entity_linker.link_entities(text, entity_spans)                    
         
-        for entity, qid in zip(doc.ents, qids):
+        mentions = defaultdict(list)
+        
+        for entity, qid in zip(entities, qids):
             if qid:
-                print(f"Detected mention of {qid} as {entity.text}")
-                # crud.create_entity(self.db, entity.text)
-                # crud.create_entity_mention(self.db, entity.kb_id_, data["timestamp"], source=data["origin"])
-                crud.create_entity_mention(self.db, qid, data["timestamp"], source=data["origin"])
+                mentions[qid].append(entity.text)
+
+        for qid, matched_entities in mentions.items():
+            print(f"Detected mention of {qid} as {matched_entities}")
+            crud.create_entity_mention(self.db, qid, data["timestamp"], source=data["origin"])
         
-        print("Detected entities: ", [ent.text for ent in doc.ents])
-        print("Recognized entities: ", list(filter(bool, qids)))
+        print("Recognized entities: ", list(mentions.keys()))
         print()
