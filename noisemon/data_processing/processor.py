@@ -6,7 +6,6 @@ import zmq
 from schemas import DataChunk
 from database import SessionLocal, engine
 from data_processing.ner_extractor import NerExtractor
-from data_processing.ticker import TickerProcessor
 from data_processing.entity_linker import EntityLinker
 import logging
 import spacy
@@ -21,7 +20,7 @@ class Processor():
         self.nlp = spacy.load("ru_core_news_lg")
         self.db = SessionLocal()
         self.ner_extractor = NerExtractor(nlp=self.nlp) 
-        self.ticker_processor = TickerProcessor()
+        
         self.entity_linker = EntityLinker(
             faiss_index_path = Path("./bin/2021-10-17-12-58-54_faiss_index_222_vectors.binary"),
             index_to_qid_map_path = Path("./bin/2021-10-17-12-58-54_index_to_qid_mapping.json"),
@@ -55,26 +54,14 @@ class Processor():
         # 1. Entity Linking phase
         doc = self.ner_extractor.extract(doc)
         # doc = self.entity_linker.link_entities(doc)
-        
-        # 2. Ticker matching phase
-        # tickers = self.ticker_processor.extract_tickers(text)
-        # 2.1 For tickers extract company names
-        # company_names = list(map(self.ticker_processor.lookup_ticker_in_knowledgebase, tickers))
-        # company_to_ticker_map = dict(zip(company_names, tickers))
-        # 3. Match them with extracted organizations
-        # matched_pairs, unmatched_orgs, unmatched_tickers = self.entity_linker.match_names(ners, company_to_ticker_map)
-        # CASE 1 : everything exactly matched -> horray, populate training dataset
-        # CASE 2 : some of NERS do not exist in tickets -> human check, penalize NER
-        # CASE 3 : ???
-
-        # 4. Match entity spans with QIDs
+        # 2. Match entity spans with QIDs
         entities = [entity for entity in doc.ents if entity.label_ == "ORG"]
         entity_spans = [(entity.start_char, entity.end_char) for entity in entities]
         print("Detected entities: ", entities)
         qids = self.entity_linker.link_entities(text, entity_spans)                    
         
+        # 3. Store mentions in database
         mentions = defaultdict(list)
-        
         for entity, qid in zip(entities, qids):
             if qid:
                 mentions[qid].append(entity.text)
@@ -85,3 +72,10 @@ class Processor():
         
         print("Recognized entities: ", list(mentions.keys()))
         print()
+
+        # 4. Try populating knowledgebase
+        #! Perform substraction of detected entities and not recognized
+        if entities:
+
+
+    

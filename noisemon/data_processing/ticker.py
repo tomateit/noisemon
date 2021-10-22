@@ -10,9 +10,9 @@ class TickerProcessor():
     """
     Class extracts tickers from texts
     """
+    explicit_dollarsign_ticker = regex.compile("(?<=\$)[A-Z]{1,5}")
     def __init__(self):
         self.extractor = reticker.TickerExtractor()
-        # self.wikidata = Wikidata()
         
         
 
@@ -22,9 +22,5 @@ class TickerProcessor():
         Just simple regex extraction
         """
         ticker_set = set(self.extractor.extract(text))
-        
-        return list(ticker_set)
 
-    # def lookup_ticker_in_knowledgebase(self, ticker: str) -> List:
-    #     #! Remove it cuz not class-specific
-    #     return self.wikidata.lookup_companies_by_ticker(ticker)
+        return list(ticker_set)
