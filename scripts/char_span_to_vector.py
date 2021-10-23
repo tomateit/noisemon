@@ -14,7 +14,7 @@ class ContextualEmbedding():
         """
         Creates an embedding, and stores it in `.embedding` attr for further use
         """
-        encoded_text = self.tokenizer([text], truncation=False, return_tensors="pt")
+        encoded_text = self.tokenizer([text], truncation=True, max_length=512, return_tensors="pt")
         wordpieces = self.tokenizer.batch_decode(encoded_text.input_ids[0])
         embedding_alignment, _ = tokenizations.get_alignments(text, wordpieces)
         self.embedding_alignment= embedding_alignment

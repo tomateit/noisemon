@@ -7,6 +7,7 @@ from schemas import DataChunk
 from database import SessionLocal, engine
 from data_processing.ner_extractor import NerExtractor
 from data_processing.entity_linker import EntityLinker
+from data_processing.dataset_populator import DatasetPopulator
 import logging
 import spacy
 import crud
@@ -26,6 +27,7 @@ class Processor():
             index_to_qid_map_path = Path("./bin/2021-10-17-12-58-54_index_to_qid_mapping.json"),
             qid_to_aliases_path = Path("./bin/2021-10-17-12-58-54_qid_to_aliases_mapping.json"),
         )
+        self.dataset_populator = DatasetPopulator(self.entity_linker)
 
     def connect_to_queue(self):
         self.context = zmq.Context.instance()

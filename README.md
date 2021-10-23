@@ -29,8 +29,13 @@ The project is very very WIP; I do research in `notebooks/`, you can check out:
 + Make use of metadata (hashtags)
 
 ### Next on the list:
++ Automatic Index Population
 + API
 + UI
+
+### Pending improvements
++ Longer sequences processing: currently we are truncating incoming texts up to model's limit
++ Add created_at for entities
 
 -----------
 ### To run tests
@@ -41,7 +46,8 @@ The project is very very WIP; I do research in `notebooks/`, you can check out:
 + TABLE: ENTITIES
     - QID
     - HUMAN READABLE NAME
-+ TBALE: TEXTS # just text for dev purposes
++ TABLE: TEXTS
 + TABLE: MENTIONS:
-    - QID
+    - ENTITIES(QID)
     - DATE
+    - SOURCE
