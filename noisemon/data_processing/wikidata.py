@@ -1,6 +1,6 @@
-from typing import List, Dict
+from typing import List, Dict, Set, Optional
 from collections import defaultdict
-import logger
+import logging
 from time import sleep
 from pprint import pprint
 from urllib.error import HTTPError
@@ -14,16 +14,18 @@ def retry_request(function):
     def retried_function(*args, **kwargs):
         nonlocal timeout
         try:
-            function(*args, **kwargs)
             timeout = DEFAULT_TIMEOUT
+            return function(*args, **kwargs)
+            
         except HTTPError as e:
             if e.code == 429:
                 timeout += 5
-                logger.debug(f"Encountered 429 from wikidata. Gonna sleep for {timeout} and retry")
+                logging.debug(f"Encountered 429 from wikidata. Gonna sleep for {timeout} and retry")
                 sleep(timeout)
                 return function(*args, **kwargs)
             else:
                 raise
+    return retried_function
 
 class Wikidata:
     def __init__(self):
@@ -40,9 +42,6 @@ class Wikidata:
                 VALUES ?ticker { "%s"}
                 ?id p:P414 ?exchange.
                 ?exchange pq:P249 ?ticker.
-                # OPTIONAL { 
-                #     ?exchange p:P946 ?ISIN
-                # }
             }
             LIMIT 20""" % (ticker,)
         
@@ -51,12 +50,26 @@ class Wikidata:
 
         return results["results"]["bindings"]
 
-    def lookup_companies_by_qid(self, qid):
-        pass
+    def lookup_entity_label_by_qid(self, qid) -> Optional[str]:
+        """
+        Given QID, lookup for name in russian
+        """
+        query =  """
+            SELECT DISTINCT ?label WHERE {
+                wd:%s rdfs:label ?label.
+            }
+            LIMIT 1""" % (qid)
+        
+        self.sparql.setQuery(query)
+        results = self.sparql.query().convert()
+    
+        if not results["results"]["bindings"]:
+            return None
+        return results["results"]["bindings"][0]["label"]["value"]
 
     @lru_cache(maxsize=5000)
     @retry_request
-    def lookup_aliases_given_ticker(self, ticker: str) -> Dict[str, Set[str]]:
+    def lookup_aliases_by_ticker(self, ticker: str) -> Dict[str, Set[str]]:
         """
         Given ticker, lookup for aliases and return em with respect to
         entity QID, e.g. Dict[QID, Set of aliases]
@@ -71,23 +84,15 @@ class Wikidata:
             ?id skos:altLabel ?alias .
         }
         LIMIT 150""" % (ticker,)
-        sparql.setQuery(query)
-
+        
         res = defaultdict(set)
-        try:
-            self.sparql.setQuery(query)
-            results = self.sparql.query().convert()
+        
+        self.sparql.setQuery(query)
+        results = self.sparql.query().convert()
     
-            for x in results["results"]["bindings"]:
-                res[x["id"]["value"]].add(x["alias"]["value"])
-            for x in results["results"]["bindings"]:
-                res[x["id"]["value"]].add(x["idLabel"]["value"])
-
-        except HTTPError as e:
-            if e.code == 429:
-                timeout = 10
-                logger.debug(f"Encountered 429 from wikidata. Gonna sleep for {timeout} and retry")
-                sleep(10)
-                return self.lookup_aliases_given_ticker(ticker)
+        for x in results["results"]["bindings"]:
+            res[x["id"]["value"].split("/")[-1]].add(x["alias"]["value"])
+        for x in results["results"]["bindings"]:
+            res[x["id"]["value"].split("/")[-1]].add(x["idLabel"]["value"])
 
         return res
