@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # coding: utf-8
+import sys
+sys.path.append("noisemon")
 from typing import List, Dict, Set, Tuple
 import json
 import os
@@ -13,6 +15,8 @@ import faiss
 import numpy as np
 from tqdm import tqdm
 from wasabi import Printer
+from noisemon.crud import create_vector_index
+from noisemon.database import SessionLocal, engine
 
 try:
     from scripts.char_span_to_vector import ContextualEmbedding
@@ -27,33 +31,27 @@ def main(data_path: Path, output_folder: Path):
 
     data = json.loads(data_path.read_text())
     msg.info(f"Got {len(data)} labeling results")
+    database = SessionLocal()
 
     embedder = ContextualEmbedding()
-    qid_to_vector_list = defaultdict(list)
-    qid_to_alias = defaultdict(set)
 
+    all_qids, all_aliases, all_vectors = [], [], []
     for labelstudio in tqdm(data):
         # Process data
-        qid_aliass, qid_vecs = ann_to_ent(labelstudio, embedder=embedder)
+        list_of_qids, list_of_aliases, list_of_vectors = ann_to_ent(labelstudio, embedder=embedder)
         # Merge results
-        for QID, vecs in qid_vecs.items():
-            qid_to_vector_list[QID].extend(vecs)
-        for QID, aliases in qid_aliass.items():
-            qid_to_alias[QID].update(aliases)
+        for QID, alias, vector in zip(list_of_qids, list_of_aliases, list_of_vectors):
+            all_qids.extend(list_of_qids)
+            all_aliases.extend(list_of_aliases)
+            all_vectors.extend(list_of_vectors)
 
-    msg.info(f"Result contains {sum([len(v) for v in qid_to_vector_list.values()])} vectors")
 
-    vector_index_to_qid = {}
-    vectors_tensor = []
+    msg.info(f"Result contains {len(all_vectors)} vectors")
+    assert len(all_qids) == len(all_aliases) == len(all_vectors)
 
-    index = 0
-    for qid, vectors in qid_to_vector_list.items():
-        for vector in vectors:
-            vector_index_to_qid[index] = qid
-            index += 1
-            vectors_tensor.append(vector)
-            
-    vectors_tensor = torch.vstack(vectors_tensor)
+    
+             
+    vectors_tensor = torch.vstack(all_vectors)
     
     d = 768  # dimension   
     faiss_index = faiss.IndexFlatIP(d)   # build the index
@@ -64,31 +62,27 @@ def main(data_path: Path, output_folder: Path):
     faiss.write_index(faiss_index, output)
     msg.good("Index was build and saved successfully", "Location: " + output)
 
-    mapping_output_name = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "_index_to_qid_mapping.json"
-    output = str(output_folder/mapping_output_name)
-    with open(output, "w") as fout:
-        json.dump(vector_index_to_qid, fout, ensure_ascii=False)
-    msg.good("Vector index to qid mapping was saved", "Location: " + output)
+    for idx, (qid, alias) in enumerate(zip(all_qids, all_aliases)):
+        create_vector_index(db = database, entity_qid = qid, index = idx, span = alias, source = "dataset")
+    msg.good("Vector index to qid and alias mapping was added to database")
 
-    aliases_output_name = datetime.now().strftime("%Y-%m-%d-%H-%M-%S") + "_qid_to_aliases_mapping.json"
-    output = str(output_folder/aliases_output_name)
-    qid_to_alias = {qid: list(aliases) for qid, aliases in qid_to_alias.items()}
-    with open(output, "w") as fout:
-        json.dump(qid_to_alias, fout, ensure_ascii=False)
-    msg.good("QID to aliases mapping was saved successfully", "Location: " + output)
+    
+    
 
 
 
-def ann_to_ent(labelstudio, embedder) -> Tuple[Dict[str, Set[str]], Dict[str, List[torch.Tensor]]]:
+def ann_to_ent(labelstudio, embedder) -> Tuple[List[str], List[str], List[torch.Tensor]]:
     """
-    Given labelstudio data returns two dicts: Dict[QID, {Alias}] and Dict[QID, [Vector]]
+    Given labelstudio data returns three list of equal length: QIDs, Text span, Vector
     """
     # Temporary structures
     id_to_qid_name_pair = defaultdict(dict)
-    qid_and_span_pairs = [] # [(qid, (span_s,span_e))]
+    list_of_spans = [] # [(span_s,span_e))]
     # Result buffers
-    qid_to_vector_list = defaultdict(list)
-    qid_to_alias = defaultdict(set)
+    list_of_qids = []
+    list_of_vectors = []
+    list_of_aliases = []
+    
     
     text = labelstudio["data"]["text"]
     embedder.embed_text(text)
@@ -110,17 +104,17 @@ def ann_to_ent(labelstudio, embedder) -> Tuple[Dict[str, Set[str]], Dict[str, Li
             # aliases
             entity_start, entity_end = chunk["value"]["start"], chunk["value"]["end"]
             entity = text[entity_start: entity_end]
-            qid_to_alias[QID].add(entity)
+            list_of_aliases.append(entity)
             # vecs will be calculated later
-            qid_and_span_pairs.append((QID, (entity_start, entity_end)))
+            list_of_spans.append((entity_start, entity_end))
+            list_of_qids.append(QID)
             
     # Given spans, get context vectors
-    qids, spans = zip(*qid_and_span_pairs) # [(qid, span), (qid, span)] -> [qid, qid], [span, span]
-    entity_vectors = embedder.get_char_span_vectors(spans)
-    for QID, entity_vector in zip(qids, entity_vectors):
-        qid_to_vector_list[QID].append(entity_vector)
-    
-    return qid_to_alias, qid_to_vector_list
+    list_of_vectors = embedder.get_char_span_vectors(list_of_spans)
+        
+    assert len(list_of_aliases) == len(list_of_vectors) == len(list_of_qids)
+
+    return list_of_qids, list_of_aliases, list_of_vectors
 
 
 
