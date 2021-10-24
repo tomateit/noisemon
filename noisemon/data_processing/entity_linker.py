@@ -1,3 +1,6 @@
+"""
+One and only module that opetares with faiss index and performs vector serach
+"""
 from typing import List, Dict, Tuple, Union
 import json
 from pathlib import Path
@@ -8,20 +11,18 @@ import numpy as np
 from scripts.char_span_to_vector import ContextualEmbedding
 from collections import Counter
 import logging
+import crud
+from database import SessionLocal, engine
 
 class EntityLinker():
     def __init__(
         self, 
-        faiss_index_path: Path, 
-        index_to_qid_map_path: Path,
-        qid_to_aliases_path: Path,
+        faiss_index_path: Path,
         k_neighbors: int = 4,
         cutoff_threshold: float = 0.8,
         ):
-
+        self.db = SessionLocal()
         self.faiss_index = faiss.read_index(str(faiss_index_path))
-        self.index_to_qid_map = json.loads(index_to_qid_map_path.read_text())
-        self.qid_to_aliases = json.loads(qid_to_aliases_path.read_text())
         self.embedder = ContextualEmbedding()
         self.k_neighbors = k_neighbors
         self.cutoff_threshold = cutoff_threshold
@@ -41,6 +42,7 @@ class EntityLinker():
         entity_vectors: numpy.ndarray = torch.vstack(entity_vectors).numpy()
         print("For provided entity spans, got following embeding matrix: ", entity_vectors.shape)
 
+        # index search shall be in one operation cuz fast
         D, I = self.faiss_index.search(entity_vectors, self.k_neighbors) 
         # I is (len(spans), k)
         qid_candidates: List[List[str]] = []
@@ -48,7 +50,9 @@ class EntityLinker():
             buff = []
             for vector_index in span_vec_idx_candidates:
                 try:
-                    qid_candidate = self.index_to_qid_map[str(vector_index)]
+                    qid_candidate = crud.get_qid_by_vector_index(self.db, int(vector_index))
+                    if qid_candidate:
+                        buff.append(qid_candidate)
                 except KeyError as e:
                     print("Key error")
                     print(span_vec_idx_candidates)
@@ -56,7 +60,6 @@ class EntityLinker():
                     print(D)
                     print(e)
                     return []
-                buff.append(qid_candidate)
             qid_candidates.append(buff)
 
         # Strategy: choosing majority
@@ -70,7 +73,8 @@ class EntityLinker():
             # If the entity is completely unknown there still will be a result
             # Thus check to be alike one of QID aliases
             try:
-                if self.similarity(entity, self.qid_to_aliases[QID]) < self.cutoff_threshold:
+                list_of_aliases = crud.get_aliases_by_qid(self.db, QID)
+                if not list_of_aliases or (self.similarity(entity, list_of_aliases) < self.cutoff_threshold):
                     QID = None
             except KeyError:
                 print(candidate_list, QID)
@@ -79,6 +83,18 @@ class EntityLinker():
 
         return detected_qids
 
+    def add_entity_vector(self, entity_qid: str, vector: np.ndarray, span: str) -> int:
+        """
+        Adds a new vector into faiss, creates new VectorIndex entity, saves faiss dump
+        """
+        self.faiss_index.add(vector)
+        next_index = self.faiss.ntotal + 1
+        crud.create_vector_index(self.db, entity_qid = entity_qid, index = next_index, span = span, source = "online")
+        print(f"Added vector number {next_index} for span '{span}' of entity {entity_qid}")
+        return next_index
+        #? SAVE THE INDEX NOW ???
+
+        
 
     def similarity(self, A: str, Bs: List[str]) -> float:
         """
