@@ -56,7 +56,7 @@ class Wikidata:
         """
         query =  """
             SELECT DISTINCT ?label WHERE {
-                wd:%s rdfs:label ?label.
+                wd:%s rdfs:label ?label FILTER (lang(?label)="ru" || lang(?label)="en").
             }
             LIMIT 1""" % (qid)
         
