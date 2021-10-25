@@ -8,7 +8,7 @@ The project is very very WIP; I do research in `notebooks/`, you can check out:
 + ...so the only data source now is telegram channels.
 + App uses local sqlite database as a form of a cache
 
-### What we do:
+### What I wanna do:
 1. Read the data stream from telegram channels
 - Subscribe to a list of channels,
 - Listen to updates 
@@ -23,31 +23,23 @@ The project is very very WIP; I do research in `notebooks/`, you can check out:
 - Put into db chunks in form of "organization: date of mention"
 - Demonstrate aggregated stats on a webpage
 
+### How the app currently works
+It has 2 phases of functioning:
+1. The faiss index is created based on pre-labeled dataset and th app is functioning with static vector set.
+2. In addition, online learning feature adds extra vectors and entities based on a strategy, thus extending range and precision of percepted entities.
+
 ### Currently working on:
-+ Entity mention saving
-+ Entity disambiguation (linking)
-+ Make use of metadata (hashtags)
++ Creating pre-labeled dataset
++ Dumping faiss index (todo: check consistency in db and index)
 
 ### Next on the list:
-+ Automatic Index Population
 + API
 + UI
 
 ### Pending improvements
 + Longer sequences processing: currently we are truncating incoming texts up to model's limit
-+ Add created_at for entities
++ Incoming texts filtration
 
 -----------
 ### To run tests
 `python -m unittest discover ./noisemon -p '*tests.py'`
-
--------------
-### Organization storage
-+ TABLE: ENTITIES
-    - QID
-    - HUMAN READABLE NAME
-+ TABLE: TEXTS
-+ TABLE: MENTIONS:
-    - ENTITIES(QID)
-    - DATE
-    - SOURCE
