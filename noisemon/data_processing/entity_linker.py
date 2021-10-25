@@ -30,8 +30,9 @@ class EntityLinker():
 
     def link_entities(self, text: str, spans: List[Tuple[int, int]]) -> List[Union[str, None]]:
         """
-        Links provided text spans with QIDs from index and returns a list of QIDs. 
-        If span does not resemple any of QID aliases, will return None. Otherwise QID
+        Links provided text spans with entities and returns a list of entity QIDs. 
+        If span does not resemple any of QID aliases, will return `None`, otherwise `QID`.
+        The text is required to infer contextual vectors.
         """
         if not spans:
             return []
@@ -51,8 +52,7 @@ class EntityLinker():
             for vector_index in span_vec_idx_candidates:
                 try:
                     qid_candidate = crud.get_qid_by_vector_index(self.db, int(vector_index))
-                    if qid_candidate:
-                        buff.append(qid_candidate)
+                    buff.append(qid_candidate)
                 except KeyError as e:
                     print("Key error")
                     print(span_vec_idx_candidates)
@@ -72,13 +72,10 @@ class EntityLinker():
             # We can not just return any QID.
             # If the entity is completely unknown there still will be a result
             # Thus check to be alike one of QID aliases
-            try:
-                list_of_aliases = crud.get_aliases_by_qid(self.db, QID)
-                if not list_of_aliases or (self.similarity(entity, list_of_aliases) < self.cutoff_threshold):
-                    QID = None
-            except KeyError:
-                print(candidate_list, QID)
-                continue
+            list_of_aliases = crud.get_aliases_by_qid(self.db, QID)
+            if not list_of_aliases or (self.similarity(entity, list_of_aliases) < self.cutoff_threshold):
+                QID = None
+
             detected_qids.append(QID)
 
         return detected_qids
@@ -88,7 +85,7 @@ class EntityLinker():
         Adds a new vector into faiss, creates new VectorIndex entity, saves faiss dump
         """
         self.faiss_index.add(vector)
-        next_index = self.faiss.ntotal + 1
+        next_index = self.faiss_index.ntotal + 1
         crud.create_vector_index(self.db, entity_qid = entity_qid, index = next_index, span = span, source = "online")
         print(f"Added vector number {next_index} for span '{span}' of entity {entity_qid}")
         return next_index
