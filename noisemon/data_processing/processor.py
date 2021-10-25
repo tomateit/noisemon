@@ -23,11 +23,9 @@ class Processor():
         self.ner_extractor = NerExtractor(nlp=self.nlp) 
         
         self.entity_linker = EntityLinker(
-            faiss_index_path = Path("./bin/2021-10-17-12-58-54_faiss_index_222_vectors.binary"),
-            index_to_qid_map_path = Path("./bin/2021-10-17-12-58-54_index_to_qid_mapping.json"),
-            qid_to_aliases_path = Path("./bin/2021-10-17-12-58-54_qid_to_aliases_mapping.json"),
+            faiss_index_path = Path("./bin/faiss_index_1170_vectors.binary")
         )
-        self.dataset_populator = DatasetPopulator(self.entity_linker)
+        self.dataset_populator = DatasetPopulator(self.entity_linker, self.nlp)
 
     def connect_to_queue(self):
         self.context = zmq.Context.instance()
@@ -76,8 +74,8 @@ class Processor():
         print()
 
         # 4. Try populating knowledgebase
-        #! Perform substraction of detected entities and not recognized
         if entities:
+            self.dataset_populator.populate(text, [], [])
 
 
     
