@@ -1,32 +1,44 @@
 """
-One and only module that opetares with faiss index and performs vector serach
+One and only module that opetares with faiss index and performs vector search
 """
 from typing import List, Dict, Tuple, Union
 import json
+import logging
 from pathlib import Path
 from difflib import SequenceMatcher
+from collections import Counter
+
 import faiss
 import torch
 import numpy as np
-from scripts.char_span_to_vector import ContextualEmbedding
-from collections import Counter
-import logging
-import crud
+
 from database import SessionLocal, engine
+import crud
+from scripts.char_span_to_vector import ContextualEmbedding
+
 
 class EntityLinker():
     def __init__(
-        self, 
-        faiss_index_path: Path,
-        k_neighbors: int = 4,
-        cutoff_threshold: float = 0.8,
+            self, 
+            k_neighbors: int = 4,
+            cutoff_threshold: float = 0.8,
         ):
         self.db = SessionLocal()
-        self.faiss_index = faiss.read_index(str(faiss_index_path))
+        self.build_faiss_index(self.db)
         self.embedder = ContextualEmbedding()
         self.k_neighbors = k_neighbors
         self.cutoff_threshold = cutoff_threshold
         logging.debug("EntityLinker initialized")
+
+    def build_faiss_index(self):
+        """
+        Reads out vectors from database and creates vector index. Used on class initialization only
+        """
+        vectors = crud.get_all_active_vectors(self.db)
+        tensor = np.vstack(vectors)
+        d = 768  # dimension
+        self.faiss_index = faiss.IndexFlatIP(d)   # build the index
+        self.faiss_index.add(tensor) # add vectors to the index
 
     def link_entities(self, text: str, spans: List[Tuple[int, int]]) -> List[Union[str, None]]:
         """
@@ -86,11 +98,9 @@ class EntityLinker():
         """
         self.faiss_index.add(vector)
         next_index = self.faiss_index.ntotal + 1
-        crud.create_vector_index(self.db, entity_qid = entity_qid, index = next_index, span = span, source = "online")
+        crud.create_vector_index(self.db, entity_qid = entity_qid, index = next_index, span = span, source = "online", vector=vector)
         print(f"Added vector number {next_index} for span '{span}' of entity {entity_qid}")
         return next_index
-        #? SAVE THE INDEX NOW ???
-
         
 
     def similarity(self, A: str, Bs: List[str]) -> float:
