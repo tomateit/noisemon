@@ -29,7 +29,7 @@ def main(database_path: Path, qid_file_path: Path, cache_location: Optional[Path
 
     # Create table
     cursor.execute('''CREATE TABLE IF NOT EXISTS entities
-                (qid text, name text, type text)''')
+                (qid text PRIMARY KEY, name text, type text)''')
 
     for qid in tqdm(qids):
         if qid not in cache:
