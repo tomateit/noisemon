@@ -1,18 +1,26 @@
 import warnings
 warnings.filterwarnings("ignore", category=UserWarning)
+
+import logging
 from pathlib import Path
 from collections import defaultdict
+
 import zmq
+import spacy
+
+import crud
 from schemas import DataChunk
+from models import Entity, Mention, VectorIndex
 from database import SessionLocal, engine
 from data_processing.ner_extractor import NerExtractor
 from data_processing.entity_linker import EntityLinker
 from data_processing.dataset_populator import DatasetPopulator
-import logging
-import spacy
-import crud
 
-class Processor():
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+
+class Processor:
     socket: zmq.Socket
     context: zmq.Context
     # nlp: spacy.lang.ru.Russian
@@ -20,11 +28,9 @@ class Processor():
     def __init__(self):
         self.nlp = spacy.load("ru_core_news_lg")
         self.db = SessionLocal()
-        self.ner_extractor = NerExtractor(nlp=self.nlp) 
-        
-        self.entity_linker = EntityLinker(
-            faiss_index_path = Path("./bin/faiss_index_1170_vectors.binary")
-        )
+        self.ner_extractor = NerExtractor(nlp=self.nlp)
+
+        self.entity_linker = EntityLinker()
         self.dataset_populator = DatasetPopulator(self.entity_linker, self.nlp)
 
     def connect_to_queue(self):
@@ -35,47 +41,50 @@ class Processor():
         # self.socket.setsockopt(zmq.SUBSCRIBE, "")
 
     def run(self):
-        logging.info("Processing is launched")
+        logger.debug("Processing is launched")
         if not hasattr(self, "socket"):
             self.connect_to_queue()
-        
+
         while True:
             data = self.socket.recv_json()
-            logging.debug("Recieved data from socket")
+            logger.debug(f"Recieved data from socket: {data}")
             self.process_data(data)
         # for data in await self.socket.recv_json():
         #     self.process_data(data)
 
     def process_data(self, data: DataChunk):
         text = data["raw_text"]
-        print("-------------------")
-        print("Text: ", text)
+
         doc = self.nlp.make_doc(text)
         # 1. Entity Linking phase
         doc = self.ner_extractor.extract(doc)
-        # doc = self.entity_linker.link_entities(doc)
-        # 2. Match entity spans with QIDs
-        entities = [entity for entity in doc.ents if entity.label_ == "ORG"]
-        entity_spans = [(entity.start_char, entity.end_char) for entity in entities]
-        print("Detected entities: ", entities)
-        qids = self.entity_linker.link_entities(text, entity_spans)                    
-        
-        # 3. Store mentions in database
-        mentions = defaultdict(list)
-        for entity, qid in zip(entities, qids):
-            if qid:
-                mentions[qid].append(entity.text)
 
-        for qid, matched_entities in mentions.items():
-            print(f"Detected mention of {qid} as {matched_entities}")
-            crud.create_entity_mention(self.db, qid, data["timestamp"], source=data["origin"])
-        
-        print("Recognized entities: ", list(mentions.keys()))
-        print()
+        # 2. Detect named entities
+        named_entities = [entity for entity in doc.ents if entity.label_ == "ORG"]
+        entity_spans = [
+            (entity.start_char, entity.end_char) for entity in named_entities
+        ]
+        logger.debug(f"Detected entities: {named_entities}")
+        # 3. Match named entities with KB entities
+        entities: Entity = self.entity_linker.link_entities(text, entity_spans)
+        assert len(named_entities) == len(
+            entities
+        ), f"Each span shall be matched with entity or None"
+
+        # 4. Store mentions in database
+        mentions = defaultdict(list)
+        for named_entity, entity in zip(named_entities, entities):
+            if entity:
+                mentions[entity].append(entity.text)
+
+        for entity, matched_entities in mentions.items():
+            logger.debug(f"Detected mention of {entity.qid} as {matched_entities}")
+            crud.create_entity_mention(
+                self.db, entity, data["timestamp"], source=data["origin"]
+            )
+
+        logger.debug(f"Recognized entities: {[x.name for x in mentions.keys()]}")
 
         # 4. Try populating knowledgebase
-        if entities:
+        if named_entities:
             self.dataset_populator.populate(text, [], [])
-
-
-    
