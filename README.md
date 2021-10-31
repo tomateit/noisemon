@@ -1,36 +1,33 @@
-# Project that listens and makes some notes
-The project is very very WIP; I do research in `notebooks/`, you can check out:
-- `building_faiss_index` - how to do entity linking with faiss and transformer
+# Noisemon (0.3)
+## Project that listens and makes some notes
+The core of this app is adaptive mechanism of faiss-based entity linking with online population and flexible ageing capabilities.
 
 
 #### This is version 1 of the app; the main nuances, which will not be the case in further versions, are the following:
-+ The app intends to retrieve data by itself (will be connected to common data infrastructure later)
++ The app intends to retrieve data by itself (not what I usually prefer, but this way it works as standalone 'monolith')
 + ...so the only data source now is telegram channels.
-+ App uses local sqlite database as a form of a cache
++ App uses local sqlite database
 
-### What I wanna do:
+### What the app does:
+0. Initializes a telegram accounts
+    - Subscribe to a list of channels, specified in `telegram_channels.txt` as line-separated list of links
+    - Unsubscribe of those unspecified in the list
 1. Read the data stream from telegram channels
-- Subscribe to a list of channels,
-- Listen to updates 
-    1. Get new text
-    2. Check requirements (e.g. not to be a repost or contain blacklisted stuff)
-    3. Parse and analyze
-2. Matching to organizations
-- The entitites are retrieved from wikidata
-    - entity matching
-    - Check if there is a ticker
-3. Store known orgs and relevant stats
-- Put into db chunks in form of "organization: date of mention"
-- Demonstrate aggregated stats on a webpage
+2. Match entities
+    - The core currently is spacy NER model for russian
+    - Entities are matched by vector similarity and text likeliness
+    - Each match is recoreded
+3. One of population strategies is applied for online learning of new entities
 
-### How the app currently works
-It has 2 phases of functioning:
-1. The faiss index is created based on pre-labeled dataset and th app is functioning with static vector set.
+
+### Nuances
+1. The vector + index are pre-saved in database, though you can technically start for scratch
 2. In addition, online learning feature adds extra vectors and entities based on a strategy, thus extending range and precision of percepted entities.
+3. The database is so you can from time to time pause, purge unused or rarely used vectors and relaunch quite easy. This will prevent vector index to grow unlimitedly.
 
 ### Currently working on:
 + Creating pre-labeled dataset
-+ Dumping faiss index (todo: check consistency in db and index)
+
 
 ### Next on the list:
 + API
@@ -39,6 +36,7 @@ It has 2 phases of functioning:
 ### Pending improvements
 + Longer sequences processing: currently we are truncating incoming texts up to model's limit
 + Incoming texts filtration
++ Fix incostistent logging means
 
 -----------
 ### To run tests
