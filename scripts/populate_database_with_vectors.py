@@ -46,14 +46,14 @@ def main(data_path: Path):
             all_vectors.extend(list_of_vectors)
 
 
-    all_vectors = list(map(np.array, all_vectors))
+    all_vectors = [np.array(vector).reshape((1, embedder.d)) for vector in  all_vectors]
     msg.info(f"Result contains {len(all_vectors)} vectors")
     assert len(all_qids) == len(all_aliases) == len(all_vectors)
 
 
 
     for idx, (qid, alias, vector) in enumerate(zip(all_qids, all_aliases, all_vectors)):
-        create_vector_index(db = database, entity_qid = qid, index = idx, span = alias, source = "dataset", vector=vector)
+        create_vector_index(db = database, entity_qid = "http://www.wikidata.org/entity/" + qid, index = idx, span = alias, source = "dataset", vector=vector)
     msg.good("Vectors are stored in database")
 
     
