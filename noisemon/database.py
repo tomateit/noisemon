@@ -24,6 +24,9 @@ engine = create_engine(
         "detect_types": sqlite3.PARSE_DECLTYPES
     }
 )
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(
+    autocommit=False, 
+    autoflush=False, 
+    bind=engine)
 
 Base = declarative_base()
