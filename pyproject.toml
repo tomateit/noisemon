@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "noisemon"
-version = "0.2.0"
+version = "0.3.0"
 description = "Module for listening informational noise and making some stats"
 authors = ["Max Ermakov <maksim_ermakov@protonmail.com>"]
 
@@ -14,7 +14,7 @@ regex = "^2021.7.6"
 spacy = {git = "https://github.com/explosion/spaCy.git"}
 SPARQLWrapper = "^1.8.5"
 Telethon = "^1.23.0"
-SQLAlchemy = "^1.4.22"
+SQLAlchemy = "1.4.26"
 pyzmq = "^22.1.0"
 faiss-cpu = "^1.7.1"
 reticker = "^3.1.3"
