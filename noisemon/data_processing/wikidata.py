@@ -7,6 +7,8 @@ from urllib.error import HTTPError
 from functools import lru_cache
 
 from SPARQLWrapper import SPARQLWrapper, JSON, XML, N3, RDF
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 def retry_request(function):
     DEFAULT_TIMEOUT = 5
@@ -20,7 +22,7 @@ def retry_request(function):
         except HTTPError as e:
             if e.code == 429:
                 timeout += 5
-                logging.debug(f"Encountered 429 from wikidata. Gonna sleep for {timeout} and retry")
+                logger.debug(f"Encountered 429 from wikidata. Gonna sleep for {timeout} and retry")
                 sleep(timeout)
                 return function(*args, **kwargs)
             else:
@@ -35,7 +37,11 @@ class Wikidata:
     @lru_cache(maxsize=2048)
     @retry_request
     def lookup_companies_by_ticker(self, ticker: str) -> List:
-
+        """
+        Given string ticker returns a list of junk
+        """
+        #TODO: rework output result to be of a certain type
+        logger.debug(f"Performing wikidata companies lookup by ticker {ticker}")
         query = """
             SELECT DISTINCT ?id ?idLabel ?ISIN WHERE {
                 SERVICE wikibase:label { bd:serviceParam wikibase:language "ru,en". }
@@ -54,6 +60,9 @@ class Wikidata:
         """
         Given QID, lookup for name in russian
         """
+        logger.debug(f"Performing wikidata entities lookup by QID: {qid}")
+        if "http" in qid:
+            qid = qid.split("/")[-1]
         query =  """
             SELECT DISTINCT ?label WHERE {
                 wd:%s rdfs:label ?label FILTER (lang(?label)="ru" || lang(?label)="en").
@@ -74,6 +83,7 @@ class Wikidata:
         Given ticker, lookup for aliases and return em with respect to
         entity QID, e.g. Dict[QID, Set of aliases]
         """
+        logger.debug(f"Performing wikidata entity aliases lookup given ticker: {ticker}")
         query =  """
         SELECT DISTINCT ?id ?idLabel ?alias WHERE {
             SERVICE wikibase:label { bd:serviceParam wikibase:language "ru,en". }
@@ -91,8 +101,8 @@ class Wikidata:
         results = self.sparql.query().convert()
     
         for x in results["results"]["bindings"]:
-            res[x["id"]["value"].split("/")[-1]].add(x["alias"]["value"])
+            res[x["id"]["value"]].add(x["alias"]["value"])
         for x in results["results"]["bindings"]:
-            res[x["id"]["value"].split("/")[-1]].add(x["idLabel"]["value"])
+            res[x["id"]["value"]].add(x["idLabel"]["value"])
 
         return res

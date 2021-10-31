@@ -21,6 +21,6 @@ class TickerProcessor():
         Takes a text, returns a list of strigs, that appear like tickers
         Just simple regex extraction
         """
-        ticker_set = set(self.extractor.extract(text))
+        ticker_set = set(self.explicit_dollarsign_ticker.findall(text))
 
         return list(ticker_set)

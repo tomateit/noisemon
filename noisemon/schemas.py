@@ -11,7 +11,7 @@ class DataChunk(BaseModel):
     timestamp: str # datetime is not json serializable
 
 class EntityType(str, Enum):
-    ORGANIZATION = "org"
+    ORGANIZATION = "ORG"
 
 class Entity(BaseModel):
     name: str

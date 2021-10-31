@@ -1,6 +1,8 @@
 import logging
-import spacy
 from typing import List, Tuple
+
+import spacy
+
 
 class NerExtractor():
 
