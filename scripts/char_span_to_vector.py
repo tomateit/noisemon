@@ -9,6 +9,7 @@ class ContextualEmbedding():
         self.model = AutoModel.from_pretrained(model_name)
         self.embedding = None
         self.embedding_alignment = None
+        self.d = 768  # dimension
 
     def embed_text(self, text) -> None:
         """
