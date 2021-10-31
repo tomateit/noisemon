@@ -61,10 +61,7 @@ class EntityLinker:
             spans
         )
         entity_vectors: numpy.ndarray = torch.vstack(entity_vectors_list).numpy()
-        logger.debug(
-            "For provided entity spans, got following embeding matrix: ",
-            entity_vectors.shape,
-        )
+        logger.debug(f"For provided entity spans, got following embeding matrix: {entity_vectors.shape}")
 
         # index search shall be in one operation cuz fast
         D, I = self.faiss_index.search(entity_vectors, self.k_neighbors)
