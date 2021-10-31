@@ -75,7 +75,7 @@ class Processor:
         mentions = defaultdict(list)
         for named_entity, entity in zip(named_entities, entities):
             if entity:
-                mentions[entity].append(entity.text)
+                mentions[entity].append(named_entity.text)
 
         for entity, matched_entities in mentions.items():
             logger.debug(f"Detected mention of {entity.qid} as {matched_entities}")
@@ -87,4 +87,6 @@ class Processor:
 
         # 4. Try populating knowledgebase
         if named_entities:
+            # we do not actually assume that processor and dataset_populator
+            # must have the same NER module, but it is
             self.dataset_populator.populate(text, [], [])

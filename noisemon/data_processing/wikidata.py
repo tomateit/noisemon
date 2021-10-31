@@ -56,6 +56,7 @@ class Wikidata:
 
         return results["results"]["bindings"]
 
+    @retry_request
     def lookup_entity_label_by_qid(self, qid) -> Optional[str]:
         """
         Given QID, lookup for name in russian

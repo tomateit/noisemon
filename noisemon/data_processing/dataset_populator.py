@@ -13,6 +13,7 @@ import logging
 import regex
 from pathlib import Path
 from datetime import datetime
+from sqlite3 import IntegrityError
 
 import crud
 from data_processing.ticker import TickerProcessor
@@ -37,7 +38,6 @@ class DatasetPopulator:
 
     def populate(self, text, entities_recognized, entities_not_recognized):
         """Entry point"""
-        logger.debug("Population invoked")
         self.ticker_strategy(text, entities_recognized, entities_not_recognized)
 
     def ticker_strategy(
@@ -47,19 +47,20 @@ class DatasetPopulator:
         Match tickers with entities, create new entities from matched, add new vectors
         """
         # Design decidion: quit the function asap - avoid heavy calls
-        logger.debug("Population invoked")
+        logger.debug("Population with ticker strategy invoked")
         # 1. Extract entities and tickers and match them
         # TODO This actually duplicates what was done in main processing cycle
         doc = self.nlp(text)
         entities = [entity for entity in doc.ents if entity.label_ == "ORG"]
-        logger.debug(f"Detected Entities: {entities}")
         if not entities:
+            logger.debug(f"No entities detected. Quitting the strategy")
             return
+        logger.debug(f"Detected Entities: {entities}")
 
         tickers = self.ticker_processor.extract_tickers(text)
-        logger.debug(f"Detected Tickers: {tickers}")
         if not tickers:
             return
+        logger.debug(f"Detected Tickers: {tickers}")
         # We do not know, which ticker belongs to which ORG at all,
         # So it's reasonable to perform lookup through all aliases
         possible_orgs = {}  # QID : {set of aliases}
@@ -75,7 +76,7 @@ class DatasetPopulator:
 
         organizations_matched = []
         organizations_mismatched = []
-        self.embedder.embed_text(text)
+        
         # TODO similarity calctulation
         # from difflib import SequenceMatcher
         # SequenceMatcher(None, "газпром", "газпромом").ratio()
@@ -86,28 +87,38 @@ class DatasetPopulator:
             else:
                 organizations_mismatched.append(entity)
 
-        print(f"Matched: {organizations_matched}")
-        print(f"Mismatched: {organizations_mismatched}")
+        logger.debug(f"Matched: {organizations_matched}")
+        logger.debug(f"Mismatched: {organizations_mismatched}")
+
+        if not organizations_matched:
+            logger.debug("None of the entities matched any of those retrived by ticker")
+            return
+
+        self.embedder.embed_text(text)
         entity_spans = [
             (entity.start_char, entity.end_char)
             for (entity, QID) in organizations_matched
         ]
         entity_vectors = self.embedder.get_char_span_vectors(entity_spans)
         # 2. For matched entities,
+        entity = None
         for (org_entity, QID), vector in zip(organizations_matched, entity_vectors):
-            # ... ensure DB has such entity
             org_name = self.wikidata.lookup_entity_label_by_qid(QID)
             try:
                 entity = crud.create_entity(
-                    self.db, entity_qid=QID, name=org_name, type=EntityType.ORGANIZATION
+                    self.db, qid=QID, name=org_name, type=EntityType.ORGANIZATION
                 )
                 print(f"Created new entity: {QID} as {org_name}")
-            except Exception as e:
-                print(e)
+            except IntegrityError as e:
+                logger.debug("Integrity error. Probably exists. Skipping")
+                continue
+            except Exception as e: #! TODO: SPECIFIC ERROR
+                logger.exception(e)
+                continue
 
             # ... store vector in KB and DB
             # entity_qid: str, vector: np.ndarray, span: str
             vector = vector.numpy().reshape((1, self.entity_linker.d))
             self.entity_linker.add_entity_vector(
-                entity=entity, vector=vector, span=org_entity.text
+                entity=entity, vector=vector, span=org_entity.text, source="online"
             )

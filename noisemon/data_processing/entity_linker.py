@@ -77,9 +77,7 @@ class EntityLinker:
             qid_candidates.append(buff)
 
         # Strategy: choosing majority
-        for candidate_list, entity_span, entity_vector in zip(
-            qid_candidates, entity_spans, entity_vectors_list
-        ):
+        for candidate_list, entity_span, entity_vector in zip(qid_candidates, entity_spans, entity_vectors_list):
             if not all(candidate_list):
                 detected_entities.append(None)
                 continue
@@ -101,8 +99,9 @@ class EntityLinker:
             else:
                 crud.increment_number_of_mentions(self.db, vector_index)
                 logger.debug(f"Vector recognized for entity {entity.qid}")
+                vector = entity_vector.numpy().reshape((1, self.d))
                 self.add_entity_vector(
-                    entity=entity, vector=entity_vector, span=entity_span
+                    entity=entity, vector=vector, span=entity_span, source="overpopulation"
                 )
                 logger.debug(
                     f"New vector created for span {entity_span} as {entity.qid}"
@@ -118,20 +117,20 @@ class EntityLinker:
         """
         Adds a new vector into faiss, creates new VectorIndex entity, saves faiss dump
         """
-        assert vector.shape == (1, self.d)
+        assert vector.shape == (1, self.d), f"Incompatible shape: {vector.shape}, expected {(1, self.d)}"
         # TODO Ensure the order of operations is good
-        next_faiss_index = self.faiss_index.ntotal + 1
+        next_faiss_index = self.faiss_index.ntotal
         self.faiss_index.add(vector)
         new_vector_index = crud.create_vector_index(
             self.db,
             entity_qid=entity.qid,
-            index=next_index,
+            index=next_faiss_index,
             span=span,
             source=source,
             vector=vector,
         )
         logger.debug(
-            f"Added vector number {next_index} for span '{span}' of entity {entity_qid}"
+            f"Added vector number {next_faiss_index} for span '{span}' of entity {entity.qid}"
         )
         return new_vector_index
 
