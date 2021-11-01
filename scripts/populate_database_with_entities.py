@@ -37,7 +37,7 @@ def main(cache_path: Path):
         create_entity(
             db=db,
             qid=qid,
-            entity_name=label,
+            name=label,
             type=EntityType.ORGANIZATION
         )
         
