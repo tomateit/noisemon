@@ -24,7 +24,7 @@ def retry_request(function):
                 timeout += 5
                 logger.debug(f"Encountered 429 from wikidata. Gonna sleep for {timeout} and retry")
                 sleep(timeout)
-                return function(*args, **kwargs)
+                return retried_function(*args, **kwargs)
             else:
                 raise
     return retried_function
@@ -56,6 +56,7 @@ class Wikidata:
 
         return results["results"]["bindings"]
 
+    @lru_cache(maxsize=512)
     @retry_request
     def lookup_entity_label_by_qid(self, qid) -> Optional[str]:
         """
