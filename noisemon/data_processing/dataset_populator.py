@@ -81,7 +81,11 @@ class DatasetPopulator:
         # from difflib import SequenceMatcher
         # SequenceMatcher(None, "газпром", "газпромом").ratio()
         for entity in entities:
-            QID = reverse_index.get(entity.text.lower(), None)
+            QID = None
+            for key in reverse_index:
+                if (key.lower() in entity.text.lower()) or (entity.text.lower() in key.lower()):
+                    QID = reverse_index[key]
+                    break
             if QID:
                 organizations_matched.append((entity, QID))
             else:
@@ -104,21 +108,14 @@ class DatasetPopulator:
         entity = None
         for (org_entity, QID), vector in zip(organizations_matched, entity_vectors):
             org_name = self.wikidata.lookup_entity_label_by_qid(QID)
-            try:
-                entity = crud.create_entity(
-                    self.db, qid=QID, name=org_name, type=EntityType.ORGANIZATION
-                )
-                print(f"Created new entity: {QID} as {org_name}")
-            except IntegrityError as e:
-                logger.debug("Integrity error. Probably exists. Skipping")
-                continue
-            except Exception as e: #! TODO: SPECIFIC ERROR
-                logger.exception(e)
-                continue
-
-            # ... store vector in KB and DB
-            # entity_qid: str, vector: np.ndarray, span: str
+   
+            print(f"Upserting new entity: {QID} as {org_name}")
+            entity = crud.create_entity(
+                self.db, qid=QID, name=org_name, type=EntityType.ORGANIZATION
+            )
             vector = vector.numpy().reshape((1, self.entity_linker.d))
             self.entity_linker.add_entity_vector(
                 entity=entity, vector=vector, span=org_entity.text, source="online"
             )
+
+
