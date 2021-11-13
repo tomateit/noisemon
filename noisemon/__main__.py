@@ -1,43 +1,22 @@
-import sys
-import uvicorn
-print(sys.path)
-from multiprocessing import Process
+
 from settings import settings
-from data_processing.processor import Processor
-from data_retrieval.telegram_data_source import TelegramDataSource
-import zmq
-import asyncio
-# context = zmq.Context()
+from processor import Processor
+from _queue import Queue
+
+myprocessor = Processor()
+queue = Queue()
+
 def main():
-    myprocessor = Processor()
-    mytelegramsource = TelegramDataSource()
     
+    queue.register_consumer_callback(myprocessor.process_data)
 
-    try:
-        
-        myprocessor_process = Process(target=myprocessor.run, name="ProcessorSubprocess")
-        myprocessor_process.start()
-
-        mytelegramsource_process = Process(target=mytelegramsource.run, name="TelegramSubprocess")
-        mytelegramsource_process.start()
-
-        # loop.subprocess_exec
-        # loop.run_until_complete(initialize_account())
-
-
-        uvicorn.run(
-            "app:app",
-            host=settings.HOST,
-            port=settings.PORT,
-            # reload=settings.ENVIRONMENT != "production"
-            reload=False
-        )
-    finally:
-        myprocessor_process.close()
-        mytelegramsource_process.close()
-        myprocessor.db.close()
-
+    queue.channel.start_consuming()
+    
 
 if __name__ == '__main__':
-    
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        queue.channel.stop_consuming()
+    finally:
+        queue.gracefully_shutdown()

@@ -16,11 +16,11 @@ from datetime import datetime
 from sqlite3 import IntegrityError
 
 import crud
-from data_processing.ticker import TickerProcessor
-from data_processing.wikidata import Wikidata
+from ticker import TickerProcessor
+from wikidata import Wikidata
 from database import SessionLocal, engine
 from schemas import EntityType
-from scripts.char_span_to_vector import ContextualEmbedding
+from tools.char_span_to_vector import ContextualEmbedding
 
 # from scripts.convert_to_labelstudio import from_text_ner_nel
 logger = logging.getLogger(__name__)
@@ -109,7 +109,7 @@ class DatasetPopulator:
         for (org_entity, QID), vector in zip(organizations_matched, entity_vectors):
             org_name = self.wikidata.lookup_entity_label_by_qid(QID)
    
-            print(f"Upserting new entity: {QID} as {org_name}")
+            logger.info(f"Upserting new entity: {QID} as {org_name}")
             entity = crud.create_entity(
                 self.db, qid=QID, name=org_name, type=EntityType.ORGANIZATION
             )

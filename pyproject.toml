@@ -7,21 +7,19 @@ authors = ["Max Ermakov <maksim_ermakov@protonmail.com>"]
 [tool.poetry.dependencies]
 python = "^3.8"
 pydantic = "^1.8.2"
-fastapi = "^0.66.0"
-uvicorn = {extras = ["standard"], version = "^0.14.0"}
 python-dotenv = "^0.18.0"
 regex = "^2021.7.6"
-spacy = {git = "https://github.com/explosion/spaCy.git"}
 SPARQLWrapper = "^1.8.5"
 Telethon = "^1.23.0"
 SQLAlchemy = "1.4.26"
-pyzmq = "^22.1.0"
 faiss-cpu = "^1.7.1"
 reticker = "^3.1.3"
-throttle = "^0.2.2"
 dill = "^0.3.4"
 torch = "^1.9.1"
-spacy-transformers = {git = "https://github.com/explosion/spacy-transformers.git"}
+pika = "^1.2.0"
+spacy = "^3.2.0"
+spacy-transformers = "^1.1.2"
+Cython = "^0.29.24"
 
 
 [tool.poetry.dev-dependencies]

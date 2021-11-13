@@ -23,9 +23,16 @@ def get_all_entity_qids(db: Session) -> List[str]:
     db.commit()
     return result
 
-def create_entity(db: Session, qid:str, entity_name: str, type: schemas.EntityType) -> Entity:
+def create_entity(db: Session, qid:str, name: str, type: schemas.EntityType) -> Entity:
+    if db.in_transaction():
+        db.commit()
     with db.begin():
-        entity = Entity(name=entity_name, type=type, qid=qid)
+        query = (select(Entity).filter_by(qid=qid))
+        result = db.execute(query).scalars().first()
+        if result:
+            return result
+
+        entity = Entity(name=name, type=type, qid=qid)
         db.add(entity)
     return entity
 
@@ -50,7 +57,8 @@ def get_all_active_vectors(db: Session) -> List[np.ndarray]:
     
 
 def get_vector_index_by_index(db: Session, index: int) -> Optional[VectorIndex]:
-    db.commit()
+    if db.in_transaction():
+        db.commit()
     with db.begin():
         statement = (select(VectorIndex)
             .filter_by(index=index))
@@ -64,6 +72,8 @@ def get_all_vector_index_qids(db: Session) -> List[str]:
     return result
 
 def create_vector_index(db: Session, entity_qid:str, index: int, span: str, source: str, vector: np.ndarray) -> VectorIndex:
+    if db.in_transaction():
+        db.commit()
     with db.begin():
         vector_index = VectorIndex(
             index=index, 
@@ -73,10 +83,11 @@ def create_vector_index(db: Session, entity_qid:str, index: int, span: str, sour
             source=source,
         )
         db.add(vector_index)
-        db.commit()
     return vector_index
 
 def increment_number_of_mentions(db: Session, vector_index: VectorIndex):
+    if db.in_transaction():
+        db.commit()
     with db.begin():
         vector_index.number_of_matches += 1
 
@@ -98,7 +109,7 @@ def create_entity_mention(db: Session, entity: Entity, timestamp: str, source: s
     with db.begin():
         timestamp = datetime.fromisoformat(timestamp)
         mention = Mention(
-            entity_qid=Entity.qid, 
+            entity_qid=entity.qid, 
             timestamp=timestamp, 
             source=source
         )

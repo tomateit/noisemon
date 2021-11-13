@@ -14,7 +14,7 @@ import numpy as np
 import crud
 from models import VectorIndex, Entity
 from database import SessionLocal, engine
-from scripts.char_span_to_vector import ContextualEmbedding
+from tools.char_span_to_vector import ContextualEmbedding
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
