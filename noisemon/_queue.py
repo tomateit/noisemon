@@ -14,7 +14,10 @@ class Queue():
     channel: pika.channel
 
     def __init__(self, **kwargs):
-        self.credentials = pika.PlainCredentials('guest', 'guest')
+        self.credentials = pika.PlainCredentials(
+            settings.RABBITMQ_USERNAME,
+            settings.RABBITMQ_PASSWORD,
+        )
         
         self.connection_parameters = pika.ConnectionParameters(
             host=settings.RABBITMQ_URI,

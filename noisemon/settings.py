@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DATABASE_URI: str
     RABBITMQ_URI: str
+    RABBITMQ_USERNAME: str
+    RABBITMQ_PASSWORD: str
     RABBITMQ_EXCHANGE: str
     RABBITMQ_SOURCE_QUEUE: str
     
