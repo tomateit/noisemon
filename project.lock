@@ -56,3 +56,20 @@ train:
   outs: []
   spacy_version: 3.1.3
   spacy_git_version: 8bda39f08
+convert_conllu:
+  cmd: python -m spacy run convert_conllu
+  script:
+    - spacy convert assets/train.conllu corpus --converter conllu --n-sents 10
+    - spacy convert assets/dev.conllu corpus --converter conllu --n-sents 10
+  deps:
+    - path: assets/train.conllu
+      md5: 412fbcf072aab655b3496d74fd58e20d
+    - path: assets/dev.conllu
+      md5: db0d18de45294fd4f2583dcdfc2ca373
+  outs:
+    - path: corpus/train.spacy
+      md5: 59767138a420ce47ee54bfaa29069fa9
+    - path: corpus/dev.spacy
+      md5: f336ba46f7b72135c7c5f5254907b6a2
+  spacy_version: 3.2.0
+  spacy_git_version: 0fc3dee77

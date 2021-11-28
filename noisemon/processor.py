@@ -21,19 +21,19 @@ logger.setLevel(logging.DEBUG)
 
 class Processor:
     def __init__(self):
-        self.nlp = spacy.load("ru_core_news_lg")
+        self.nlp_ru = spacy.load("ru_core_news_lg")
         self.db = SessionLocal()
-        self.ner_extractor = NerExtractor(nlp=self.nlp)
+        self.ner_extractor = NerExtractor(nlp=self.nlp_ru)
 
         self.entity_linker = EntityLinker()
-        self.dataset_populator = DatasetPopulator(self.entity_linker, self.nlp)
+        self.dataset_populator = DatasetPopulator(self.entity_linker, self.nlp_ru)
 
 
 
     def process_data(self, data: DataChunk):
         text = data.raw_text
 
-        doc = self.nlp.make_doc(text)
+        doc = self.nlp_ru.make_doc(text)
         # 1. Entity Linking phase
         doc = self.ner_extractor.extract(doc)
 
