@@ -73,3 +73,16 @@ convert_conllu:
       md5: f336ba46f7b72135c7c5f5254907b6a2
   spacy_version: 3.2.0
   spacy_git_version: 0fc3dee77
+debug:
+  cmd: python -m spacy run debug
+  script:
+    - python -m spacy debug data configs/nlp_trf.cfg --paths.train corpus/train.spacy
+      --paths.dev corpus/dev.spacy -c components/custom_components.py
+  deps:
+    - path: corpus/train.spacy
+      md5: 52c6854217aa0cf41af59f5acc43e915
+    - path: corpus/dev.spacy
+      md5: 7672fef6be54f1af901a0f8eb56be83f
+  outs: []
+  spacy_version: 3.2.0
+  spacy_git_version: 0fc3dee77

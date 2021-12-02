@@ -115,6 +115,14 @@ commands:
       - "${vars.trained_model}"
       - "corpus/${vars.test}"
 
+  - name: debug
+    help: "Final evaluation on the dev data and printing the results"
+    script:
+      - "python -m spacy debug data ${vars.config} --paths.train ${vars.train} --paths.dev ${vars.dev} -c components/custom_components.py"
+    deps:
+      - ${vars.train}
+      - ${vars.dev}
+
   # - name: clean
   #   help: "Remove intermediate files"
   #   script:
