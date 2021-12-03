@@ -12,6 +12,7 @@
 *.pickle
 *.binary
 *.json
+*.txt
 
 __pycache__/
 .ipynb_checkpoints/

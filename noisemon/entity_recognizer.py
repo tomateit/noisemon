@@ -4,7 +4,7 @@ from typing import List, Tuple
 import spacy
 
 
-class NerExtractor():
+class EntityRecognizer():
 
     def __init__(self, nlp=None):
         if not nlp:
@@ -18,6 +18,6 @@ class NerExtractor():
         Takes a Doc, applies Ner pipeline on it
         Currently takes just ORG type
         """
-        doc = self.nlp.get_pipe("ner")(doc)
+        doc = self.nlp.get_pipe("entity_recognition")(doc)
                 
         return doc

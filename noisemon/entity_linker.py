@@ -10,11 +10,12 @@ from difflib import SequenceMatcher
 import faiss
 import torch
 import numpy as np
+from spacy.tokens import Doc
 
 import crud
 from models import VectorIndex, Entity
 from database import SessionLocal, engine
-from tools.char_span_to_vector import ContextualEmbedding
+from tools.span_to_vector import span_to_vector
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
@@ -26,8 +27,8 @@ class EntityLinker:
         k_neighbors: int = 4,
         cutoff_threshold: float = 0.8,
     ):
-        self.embedder = ContextualEmbedding()
-        self.d = self.embedder.d  # dimension
+        # self.d = self.embedder.d  # dimension
+        self.d = 768
         self.db = SessionLocal()
         self.build_faiss_index()
         self.k_neighbors = k_neighbors
@@ -44,23 +45,19 @@ class EntityLinker:
         self.faiss_index = faiss.IndexFlatIP(self.d)  # build the index
         self.faiss_index.add(tensor)  # add vectors to the index
 
-    def link_entities(
-        self, text: str, spans: List[Tuple[int, int]]
-    ) -> List[Union[Entity, None]]:
+    def link_entities(self, doc: Doc) -> List[Union[Entity, None]]:
         """
-        Links provided text spans with entities and returns a list of entity QIDs.
-        If span does not resemple any of QID aliases, will return `None`, otherwise `QID`.
-        The text is required to infer contextual vectors.
+        Links provided doc ents with entities and returns a list of `Entity` models.
+        If a span does not resemple any of QID aliases, will return `None`, otherwise `Entity`.
+        Doc must contain ._.trf_data to get span embeddings
         """
-        if not spans:
-            return []
         detected_entities = []
-        entity_spans = [text[e[0] : e[1]] for e in spans]
-        self.embedder.embed_text(text)
-        entity_vectors_list: List[torch.Tensor] = self.embedder.get_char_span_vectors(
-            spans
-        )
-        entity_vectors: numpy.ndarray = torch.vstack(entity_vectors_list).numpy()
+        entity_spans = [ent for ent in doc.ents if ent.label_ == "ORG"]
+        print(entity_spans)
+        # entity_spans = [text[e[0] : e[1]] for e in spans]
+
+        entity_vectors_list: List[np.ndarray] = [span_to_vector(doc, ent.start, ent.end) for ent in entity_spans]
+        entity_vectors: numpy.ndarray = np.vstack(entity_vectors_list).astype(np.float32)
         logger.debug(f"For provided entity spans, got following embeding matrix: {entity_vectors.shape}")
 
         # index search shall be in one operation cuz fast
@@ -94,12 +91,12 @@ class EntityLinker:
             # If the entity is completely unknown there still will be a result
             # Thus check to be alike one of QID aliases
             list_of_aliases = entity.aliases
-            if self.similarity(entity_span, list_of_aliases) < self.cutoff_threshold:
+            if self.similarity(entity_span.text, list_of_aliases) < self.cutoff_threshold:
                 entity = None
             else:
                 crud.increment_number_of_mentions(self.db, vector_index)
                 logger.debug(f"Vector recognized for entity {entity.qid}")
-                vector = entity_vector.numpy().reshape((1, self.d))
+                vector = entity_vector.reshape((1, self.d))
                 self.add_entity_vector(
                     entity=entity, vector=vector, span=entity_span, source="overpopulation"
                 )
