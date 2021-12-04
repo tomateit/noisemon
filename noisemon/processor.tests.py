@@ -13,12 +13,6 @@ class TestProcessor(unittest.TestCase):
 
 
 
-    def test_processor_queue_connection(self):
-        p = Processor()
-    
-        # self.processor.connect_to_queue()
-        # self.assertIsInstance(self.processor.socket, zmq.Socket)
-
 
 
     def tearDown(self):
