@@ -8,7 +8,7 @@ import faiss
 import numpy as np
 
 from database import SessionLocal
-from models import VectorIndexModel, Entity
+from models import Mention, Entity
 
 logger = logging.getLogger("vector_index")
 logging.basicConfig(level=logging.DEBUG)
@@ -20,8 +20,7 @@ class VectorIndex:
     Class performs all operations regarding Faiss Vector Index
     - vector search
     - vector addition
-    It solely operates VectorIndexModel model, to ensure that vector index is
-    fully in-sync with vectors stored in database.
+    
 
     The index is fully-loaded on startup from database
     """
@@ -49,41 +48,26 @@ class VectorIndex:
 
     def initialize(self):
         logger.debug("Vector loading has been launched")
-        tensor = VectorIndexModel.get_all_active_vectors(self.db)
+        tensor = Mention.get_all_active_vectors(self.db)
+        if tensor is None:
+            logger.warning("No vectors to add in index. Add vectors!")
+            return 
         self.validate_input_data(tensor)
         self.index.add(tensor)
         logger.info(
             f"Index trained: {self.index.is_trained}, number of vectors: {self.index.ntotal}"
         )
 
-    def add_entity_vector(
-        self, entity: Entity, vector: np.ndarray, span: str, source="online"
-    ) -> Optional[VectorIndexModel]:
+    def add_entity_vector_from_mention(self, mention: Mention):
         """
-        Adds a new vector into faiss, creates new VectorIndexModel entity
-        If any of these actions cause error, everything will be reverted
+        Adds a new vector from mention
         """
-        next_vector_index = self.index.ntotal
-        self.db.begin_nested()
-        try:
-            new_vector_index = VectorIndexModel(
-                index=next_vector_index, 
-                entity_qid=entity.qid, 
-                vector=vector,
-                span=span, 
-                source=source,
-            )
-            self.db.add(new_vector_index)
-            self.index.add(vector)
-        except Exception as ex:
-            logger.error(ex)
-            self.db.rollback()
-            return None
-        self.db.commit()
-        logger.debug(
-            f"Added vector number {next_vector_index} for span '{span}' of entity {entity.qid}"
-        )
-        return new_vector_index
+        next_index = self.index.ntotal
+        vector = mention.vector
+        self.index.add(vector)
+        mention.vector_index = next_index
+        logger.debug(f"Added vector #{next_index} of mention {mention.span} to index.")
+
 
     def validate_input_data(self, data: Any, check_first_dim=False):
         assert type(data) == np.ndarray, f"Input data must be `np.ndarray` but it is {type(data)}"
@@ -93,11 +77,6 @@ class VectorIndex:
         else:
             assert data.shape[1] == self.n_features, f"Tensor shape mismatch: (x, {self.n_features}) -> {data.shape}"
 
-    def get_vector_model_by_index(self, index: int) -> Optional[VectorIndexModel]:
-        return VectorIndexModel.get_vector_model_by_index(self.db, index)
-
-    def increment_number_of_mentions(self, vector_index: VectorIndexModel):
-        return VectorIndexModel.increment_number_of_mentions(self.db, vector_index)
 
     @property
     def ready(self):

@@ -5,7 +5,7 @@ from datetime import datetime
 from database import Base
 
 class DataChunk(BaseModel):
-    origin: str
+    # origin: str
     link: str
     text: str
     raw_text: str

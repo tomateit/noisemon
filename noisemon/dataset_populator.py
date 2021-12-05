@@ -14,15 +14,16 @@ import regex
 from pathlib import Path
 from datetime import datetime
 from sqlite3 import IntegrityError
+from spacy.tokens import Doc, Span
+from typing import Set, List, Dict, Optional
 
-import crud
+# import crud
 from ticker import TickerProcessor
 from wikidata import Wikidata
 from database import SessionLocal, engine
 from schemas import EntityType
-from tools.char_span_to_vector import ContextualEmbedding
+from models import Entity, Mention
 
-# from scripts.convert_to_labelstudio import from_text_ner_nel
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
@@ -32,40 +33,35 @@ class DatasetPopulator:
         self.ticker_processor = TickerProcessor()
         self.wikidata = Wikidata()
         self.db = SessionLocal()
-        self.embedder = ContextualEmbedding()
         self.entity_linker = entity_linker
         self.nlp = nlp
 
-    def populate(self, text, entities_recognized, entities_not_recognized):
+    def populate(self, text, linked_entities: List[Optional[Entity]]):
         """Entry point"""
-        self.ticker_strategy(text, entities_recognized, entities_not_recognized)
+        self.ticker_strategy(text, linked_entities)
 
-    def ticker_strategy(
-        self, text, entities_recognized, entities_not_recognized
-    ) -> None:
+    def ticker_strategy(self, doc: Doc, linked_entities) -> List[Optional[Entity]]:
         """
         Match tickers with entities, create new entities from matched, add new vectors
         """
         # Design decidion: quit the function asap - avoid heavy calls
         logger.debug("Population with ticker strategy invoked")
-        # 1. Extract entities and tickers and match them
-        # TODO This actually duplicates what was done in main processing cycle
-        doc = self.nlp(text)
-        entities = [entity for entity in doc.ents if entity.label_ == "ORG"]
-        if not entities:
-            logger.debug(f"No entities detected. Quitting the strategy")
-            return
-        logger.debug(f"Detected Entities: {entities}")
-
-        tickers = self.ticker_processor.extract_tickers(text)
+        # 1. Extract entities
+        recognized_entities: List[Span] = [ent for ent in doc.ents if ent.label_ == "ORG"]
+        # 2.  Extract tickers
+        tickers = self.ticker_processor.extract_tickers(doc.text) # tickers are unique
         if not tickers:
-            return
+            logger.debug(f"No tickers detected. Quitting the strategy")
+            return []
         logger.debug(f"Detected Tickers: {tickers}")
+
+        # 3. Match entities and tickers
+        # For each ticker we find company with same ticker and get its aliases
         # We do not know, which ticker belongs to which ORG at all,
         # So it's reasonable to perform lookup through all aliases
-        possible_orgs = {}  # QID : {set of aliases}
+        possible_orgs: Dict[str, Set[str]] = {}  # {QID : {set of aliases}}
         for ticker in tickers:
-            lookup_result = self.wikidata.lookup_aliases_by_ticker(ticker)
+            lookup_result: Dict[str, Set[str]] = self.wikidata.lookup_aliases_by_ticker(ticker)
             possible_orgs.update(lookup_result)
         # this can erase some entities with overlapping aliases, but let it be so for now
         reverse_index = {
@@ -75,47 +71,51 @@ class DatasetPopulator:
         }
 
         organizations_matched = []
-        organizations_mismatched = []
         
         # TODO similarity calctulation
         # from difflib import SequenceMatcher
         # SequenceMatcher(None, "газпром", "газпромом").ratio()
-        for entity in entities:
+        for entity in recognized_entities:
             QID = None
             for key in reverse_index:
                 if (key.lower() in entity.text.lower()) or (entity.text.lower() in key.lower()):
                     QID = reverse_index[key]
                     break
-            if QID:
-                organizations_matched.append((entity, QID))
-            else:
-                organizations_mismatched.append(entity)
+            organizations_matched.append(QID)
 
-        logger.debug(f"Matched: {organizations_matched}")
-        logger.debug(f"Mismatched: {organizations_mismatched}")
 
-        if not organizations_matched:
-            logger.debug("None of the entities matched any of those retrived by ticker")
-            return
+        logger.debug(f"Matched {sum(set([1 for i in organizations_matched if i]))} entities by ticker")
 
-        self.embedder.embed_text(text)
-        entity_spans = [
-            (entity.start_char, entity.end_char)
-            for (entity, QID) in organizations_matched
-        ]
-        entity_vectors = self.embedder.get_char_span_vectors(entity_spans)
-        # 2. For matched entities,
-        entity = None
-        for (org_entity, QID), vector in zip(organizations_matched, entity_vectors):
-            org_name = self.wikidata.lookup_entity_label_by_qid(QID)
-   
-            logger.info(f"Upserting new entity: {QID} as {org_name}")
-            entity = crud.create_entity(
-                self.db, qid=QID, name=org_name, type=EntityType.ORGANIZATION
-            )
-            vector = vector.numpy().reshape((1, self.entity_linker.d))
-            self.entity_linker.add_entity_vector(
-                entity=entity, vector=vector, span=org_entity.text, source="online"
-            )
+
+        newly_created_entities: List[Optional[Entity]] = []
+        for QID, recognized_entity, linked_entity in zip(organizations_matched, recognized_entities, linked_entities):
+            if not QID: # recognized entity always exists
+                logger.info(f"Entity {recognized_entity} did not match any doc's tickers' aliases")
+                newly_created_entities.append(None)
+                continue
+            if linked_entity:
+                if QID == linked_entity.qid:
+                    logger.info(f"Matched known entity {linked_entity.name} by ticker")
+                else:
+                    logger.warning(f"Matched already linked entity {linked_entity.name} by ticker aliases, but it got {QID} instead of {linked_entity.qid}")
+                newly_created_entities.append(None)
+                continue
+            if QID and not linked_entity and Entity.get_by_qid(self.db, QID):
+                # PERHAPS we already have such entity but did not match it
+                logger.debug(f"Entity {QID} already exists in database but it was not matched in first place")
+                newly_created_entities.append(None)
+                continue
+
+
+            # Let's create new entity!
+            name = self.wikidata.lookup_entity_label_by_qid(QID)
+            with self.db.begin_nested():
+                entity = Entity(qid=QID, name=name, type=EntityType.ORGANIZATION)
+                logger.info(f"Creating new entity: {QID} as {name}")
+                self.db.add(entity)
+                newly_created_entities.append(entity)
+            self.db.commit()
+
+        return newly_created_entities
 
 

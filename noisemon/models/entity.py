@@ -26,14 +26,13 @@ class Entity(Base):
     type = Column(Enum(EntityType), nullable=False)
     
     mentions = relationship("Mention", back_populates="entity")
-    associated_vector_indices = relationship("VectorIndexModel", back_populates="entity")
 
     def __repr__(self):
         return f"Entity[name={self.name},qid={self.qid}]"
 
     @property
     def aliases(self) -> Set[str]:
-        return set([x.span for x in self.associated_vector_indices])
+        return set([x.span for x in self.mentions])
 
     @staticmethod
     def get_entities(db: Session, skip: int = 0, limit: int = 100) -> List[Entity]:
@@ -47,7 +46,13 @@ class Entity(Base):
         return result
 
     @staticmethod
-    def create_entity(db: Session, qid:str, name: str, type: EntityType) -> Entity:
+    def get_by_qid(db: Session, qid: str) -> Optional[Entity]:
+        query = (select(Entity).filter_by(qid=qid))
+        result = db.execute(query).scalars().first()
+        return result
+    
+    @staticmethod
+    def upsert_entity(db: Session, qid:str, name: str, type: EntityType) -> Entity:
         if db.in_transaction():
             db.commit()
         with db.begin():
