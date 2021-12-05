@@ -1,9 +1,11 @@
 from typing import List
 import sys
-sys.path.append("noisemon")
+from pathlib import Path
+sys.path.append(str(Path(__file__).parent.parent.resolve() / "noisemon"))
+print(sys.path)
 import time
 import logging
-import zmq
+
 import json
 import typer
 from pathlib import Path
@@ -12,8 +14,7 @@ from schemas import DataChunk
 import regex
 
 from functools import lru_cache
-# These example values won't work. You must get your own api_id and
-# api_hash from https://my.telegram.org, under API Development.
+from processor import Processor
 
 
 def main(data_path: Path):
@@ -21,13 +22,9 @@ def main(data_path: Path):
     data = json.loads(data_path.read_text())
     data = data["messages"]
 
-    # 2. Connect to queue
-    context = zmq.Context.instance()
-    socket = context.socket(zmq.PUB)
-    socket.connect("tcp://127.0.0.1:2001")
+    processor = Processor()
 
-
-    for chunk in tqdm(data):
+    for chunk in tqdm(data[100:10000]):
         if chunk["type"] != "message": continue
         try:
             text = chunk['text']
@@ -39,11 +36,14 @@ def main(data_path: Path):
             break
         raw_text = text
         timestamp = chunk["date"]
-        origin = "https://t.me/" + chunk["from"] + "/" + str(chunk["id"])
+        link = "https://t.me/" + chunk["from"] + "/" + str(chunk["id"])
                 
-        message = DataChunk(raw_text=raw_text, text=text, origin=origin, timestamp=timestamp)
-        socket.send_json(dict(message))
-        time.sleep(0.1)
+        message = DataChunk(raw_text=raw_text, text=text, link=link, timestamp=timestamp)
+        # try:
+        processor.process_data(message)
+        # except Exception as ex:
+        #     print(ex)
+        time.sleep(0.5)
         
 def glue_chunks(chunks: List)-> str:
     buffer = []
