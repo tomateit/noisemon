@@ -1,43 +1,38 @@
-# Noisemon (0.3)
-## Project that listens and makes some notes
-The core of this app is adaptive mechanism of faiss-based entity linking with online population and flexible ageing capabilities.
+# NOISEMON (0.4)
+## Project that reads and makes some notes
+The core of this app is adaptive mechanism of Vector Index-based entity linking with online population.
 
 
-#### This is version 1 of the app; the main nuances, which will not be the case in further versions, are the following:
-+ The app intends to retrieve data by itself (not what I usually prefer, but this way it works as standalone 'monolith')
-+ ...so the only data source now is telegram channels.
-+ App uses local sqlite database
+#### This is a service, which means:
++ It has quite limited purpose now: find entities in provided texts and link them to some wikidata entities.
++ Components are quite independent and (as I tried most) not coupled, 
++ ... so one basically can use it as a standalone script
++ ... yet it is designed to work with some database
++ The app is intended to be build into some data exchange framework (in this case - RabbitMQ), it has no data retrieving capabilities
+
 
 ### What the app does:
-0. Initializes a telegram accounts
-    - Subscribe to a list of channels, specified in `telegram_channels.txt` as line-separated list of links
-    - Unsubscribe of those unspecified in the list
-1. Read the data stream from telegram channels
-2. Match entities
-    - The core currently is spacy NER model for russian
-    - Entities are matched by vector similarity and text likeliness
-    - Each match is recoreded
+1. Listens to the stream of text messages
+2. Performs spaCy-based text processing:
+    - The custom transformer+ner pipeline is used to extract named entities
+    - Entities are matched by vector similarity and text likeliness with other entities' vectors
+    - Each match is recoreded and allows to make a connection between wikidata entity and mentioned entity
+    - I could basically match by substring matching, but vector-enabled matching allows to disambiguate entities which have similar names.
 3. One of population strategies is applied for online learning of new entities
 
 
 ### Nuances
-1. The vector + index are pre-saved in database, though you can technically start for scratch
-2. In addition, online learning feature adds extra vectors and entities based on a strategy, thus extending range and precision of percepted entities.
-3. The database is so you can from time to time pause, purge unused or rarely used vectors and relaunch quite easy. This will prevent vector index to grow unlimitedly.
+1. The vectos are saved in database, so they are persistent between restarts, even though the vector index is in-memory.
+2. Initial vector population from pre-labeled dataset is helpful, though you can technically start for scratch with an empy database.
+3. In addition, online learning feature adds extra vectors and entities based on a strategy, thus extending range and precision of percepted entities.
+4. The storage is designed in a way you can retrieve enough data to create a pre-labeled NER+NEL dataset from the data you have.
 
-### Currently working on:
-+ Creating pre-labeled dataset
-
-
-### Next on the list:
-+ API
-+ UI
 
 ### Pending improvements
-+ Longer sequences processing: currently we are truncating incoming texts up to model's limit
-+ Incoming texts filtration
-+ Fix incostistent logging means
++ Fix incostistent logging means.
++ Fix test running and test framework unification.
++ Vector ageing capabilities (not all learned vectors are actually useful for search).
 
 -----------
 ### To run tests
-`python -m unittest discover ./noisemon -p '*tests.py'`
+`python -m unittest discover ./noisemon -p '*.tests.py'`
