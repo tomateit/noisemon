@@ -47,7 +47,8 @@ class DatasetPopulator:
         # Design decidion: quit the function asap - avoid heavy calls
         logger.debug("Population with ticker strategy invoked")
         # 1. Extract entities
-        recognized_entities: List[Span] = [ent for ent in doc.ents if ent.label_ == "ORG"]
+        recognized_entities: List[Span] = [ent for ent in doc.ents if ent.label_ == "ORG" and ent._.trf_vector is not None]
+        assert len(recognized_entities) == len(linked_entities), "Inconsistent lengths"
         # 2.  Extract tickers
         tickers = self.ticker_processor.extract_tickers(doc.text) # tickers are unique
         if not tickers:
@@ -59,10 +60,11 @@ class DatasetPopulator:
         # For each ticker we find company with same ticker and get its aliases
         # We do not know, which ticker belongs to which ORG at all,
         # So it's reasonable to perform lookup through all aliases
-        possible_orgs: Dict[str, Set[str]] = {}  # {QID : {set of aliases}}
+        possible_orgs: Dict[str, List[str]] = {}  # {QID : {set of aliases}}
         for ticker in tickers:
-            lookup_result: Dict[str, Set[str]] = self.wikidata.lookup_aliases_by_ticker(ticker)
-            possible_orgs.update(lookup_result)
+            lookup_result: Dict[str, List[str]] = self.wikidata.lookup_aliases_by_ticker(ticker)
+            if lookup_result:
+                possible_orgs.update(lookup_result)
         # this can erase some entities with overlapping aliases, but let it be so for now
         reverse_index = {
             alias.lower(): qid
@@ -82,39 +84,49 @@ class DatasetPopulator:
                     QID = reverse_index[key]
                     break
             organizations_matched.append(QID)
-
+        assert len(recognized_entities) == len(organizations_matched), "Inconsistent lengths"
 
         logger.debug(f"Matched {sum(set([1 for i in organizations_matched if i]))} entities by ticker")
 
 
         newly_created_entities: List[Optional[Entity]] = []
-        for QID, recognized_entity, linked_entity in zip(organizations_matched, recognized_entities, linked_entities):
-            if not QID: # recognized entity always exists
-                logger.info(f"Entity {recognized_entity} did not match any doc's tickers' aliases")
+        for idx, QID, recognized_entity, linked_entity in zip(range(len(recognized_entities)),organizations_matched, recognized_entities, linked_entities):
+            # basically 4 states: 
+            # {no QID}, {QID and LinkedEntity[may match or mismatch qids]}, and {QID + no LinkedEntity}
+            if not QID: # no QID
+                # recognized entity does not resemble any of tickers' aliases
+                logger.info(f"Recognized entity `{recognized_entity}` did not match any doc's tickers' aliases")
                 newly_created_entities.append(None)
                 continue
-            if linked_entity:
+            elif QID and linked_entity: # both exist
                 if QID == linked_entity.qid:
-                    logger.info(f"Matched known entity {linked_entity.name} by ticker")
+                    logger.info(f"Recognized entity {recognized_entity} Linked as {linked_entity.name} got correct match with one of the doc tickers")
+                    newly_created_entities.append(None)
+                    continue
                 else:
-                    logger.warning(f"Matched already linked entity {linked_entity.name} by ticker aliases, but it got {QID} instead of {linked_entity.qid}")
-                newly_created_entities.append(None)
-                continue
-            if QID and not linked_entity and Entity.get_by_qid(self.db, QID):
-                # PERHAPS we already have such entity but did not match it
-                logger.debug(f"Entity {QID} already exists in database but it was not matched in first place")
-                newly_created_entities.append(None)
-                continue
-
-
-            # Let's create new entity!
-            name = self.wikidata.lookup_entity_label_by_qid(QID)
-            with self.db.begin_nested():
-                entity = Entity(qid=QID, name=name, type=EntityType.ORGANIZATION)
-                logger.info(f"Creating new entity: {QID} as {name}")
-                self.db.add(entity)
-                newly_created_entities.append(entity)
-            self.db.commit()
+                    # assuming that entity_linking capabilities prevail on alias comparasion
+                    # we do not create new entity based on alias matching
+                    logger.warning(f"Matched already linked entity {linked_entity.name} recognized as {recognized_entity} by ticker aliases, but it matches {QID} alias instead")
+                    newly_created_entities.append(None)
+                    continue
+            elif QID and not linked_entity: # no linked entity
+                if  entity := Entity.get_by_qid(self.db, QID):
+                    # PERHAPS we already have such entity but did not match it, BC have not seen similar alias
+                    logger.debug(f"Entity {entity.name} is in database but was not linked with {recognized_entity}")
+                    newly_created_entities.append(entity)
+                    linked_entities[idx] = entity # may not propagate long enough and be buggy
+                    continue
+                else:
+                    # no such known entity in db, creation process
+                    name = self.wikidata.lookup_entity_label_by_qid(QID)
+                    with self.db.begin_nested():
+                        entity = Entity(qid=QID, name=name, type=EntityType.ORGANIZATION)
+                        logger.info(f"Creating new entity: {QID} as {name}")
+                        self.db.add(entity)
+                        newly_created_entities.append(entity)
+                    self.db.commit()
+            else:
+                raise Exception(f"Incorrect state, unsupported combination: {QID}, {recognized_entity}, {linked_entity}")
 
         return newly_created_entities
 
