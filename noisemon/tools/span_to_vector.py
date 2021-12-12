@@ -1,16 +1,16 @@
 from spacy.tokens import Doc
 import numpy as np
 from thinc.api import Ragged
+from sklearn.preprocessing import normalize
+
+# def normalize(v):
+#     norm = np.linalg.norm(v, ord=2)
+#     if norm == 0:
+#         norm = np.finfo(v.dtype).eps
+#     return v / norm
 
 
-def normalize(v):
-    norm = np.linalg.norm(v, ord=2)
-    if norm == 0:
-        norm = np.finfo(v.dtype).eps
-    return v / norm
-
-
-def span_to_vector(doc: Doc, start: int, end: int) -> np.ndarray:
+def span_to_vector(doc: Doc, start: int, end: int) -> Optional[np.ndarray]:
     d = 768
     try:
         d_ = doc._.trf_data.model_output[1].shape[1]
@@ -21,6 +21,8 @@ def span_to_vector(doc: Doc, start: int, end: int) -> np.ndarray:
         print(f"Error occured when checked dimension: {ex}")
 
     indices = doc._.trf_data.align[start:end].dataXd
+    if not len(indices):
+        return None
     document_tensor = doc._.trf_data.tensors[0]
     document_tensor = document_tensor.reshape(-1, d)
     vectors = document_tensor[indices]
