@@ -13,7 +13,6 @@ from spacy.tokens import Span
 from schemas import DataChunk
 from models import Entity, Mention, Document
 from database import SessionLocal, engine
-from entity_recognizer import EntityRecognizer
 from entity_linker import EntityLinker
 from dataset_populator import DatasetPopulator
 from components.custom_components import *
@@ -36,6 +35,7 @@ class Processor:
 
 
     def process_data(self, data: DataChunk):
+        logger.debug("vvvvvvvvvvvvv Processor.process_data called vvvvvvvvvvvvvvvvvv")
         # 1. Save data to database
         with self.db.begin_nested():
             document = Document(
@@ -46,7 +46,8 @@ class Processor:
             )
             self.db.add(document)
         self.db.commit()
-        
+        logger.debug(f"Created new document: {data.link}")
+
         # 2. Implicit NER
         doc = self.nlp(document.text)
         recognized_entities = [entity for entity in doc.ents if entity.label_ == "ORG" and entity._.trf_vector is not None]
@@ -60,11 +61,21 @@ class Processor:
         # 4. Try to find extra entities
         newly_created_entities = self.dataset_populator.ticker_strategy(doc, linked_entities)
         
-
+        
         # 5. Store mentions for all entities in database
         for linked_entity, recognized_entity, new_entity in zip(linked_entities, recognized_entities, newly_created_entities):
             if (linked_entity is None) and (new_entity is None): continue
-            entity = linked_entity or new_entity # one is not None for sure
+            if linked_entity:
+                marker = "from_entity_linker"
+                entity = linked_entity
+            elif new_entity:
+                marker = "from_populator"
+                entity = new_entity
+            else:
+                raise Exception("Unacceptable state")
+            # entity = linked_entity or new_entity # one is not None for sure
+            logger.debug(f"(*) {marker} New mention will be created for {entity.name} as {recognized_entity}")
+            # continue
             with self.db.begin_nested():
                 new_mention = Mention(
                     entity_qid=entity.qid,
@@ -76,6 +87,8 @@ class Processor:
                 )
                 self.db.add(new_mention)
                 self.entity_linker.vector_index.add_entity_vector_from_mention(new_mention)
+        self.db.commit()
+        logger.debug("^^^^^^^^^^^^^^^ Processor.process_data finished working ^^^^^^^^^^^^^^^^^^")
 
 
         

@@ -66,7 +66,7 @@ class VectorIndex:
         vector = mention.vector
         self.index.add(vector)
         mention.vector_index = next_index
-        logger.debug(f"Added vector #{next_index} of mention {mention.span} to index.")
+        logger.debug(f"Added vector #{next_index} of mention as {mention.span} to index.")
 
 
     def validate_input_data(self, data: Any, check_first_dim=False):

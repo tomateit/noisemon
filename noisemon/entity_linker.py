@@ -28,7 +28,7 @@ class EntityLinker:
     def __init__(
         self,
         k_neighbors: int = 4,
-        cutoff_threshold: float = 0.8,
+        cutoff_threshold: float = 0.95,
     ):
         # self.d = self.embedder.d  # dimension
         self.d = 768
@@ -62,28 +62,30 @@ class EntityLinker:
         I: List[List[int]] = self.vector_index.find_closes_indices_batch(tensor_of_entities, self.k_neighbors)
         list_of_candidate_lists: List[List[Optional[Mention]]] = flat_map(p(Mention.get_by_vector_index, self.db), I)
 
-        pprint(list_of_candidate_lists)
+        # pprint(list_of_candidate_lists)
         
         # 3. Strategy: choosing majority
         for candidate_list, recognized_entity in zip(list_of_candidate_lists, recognized_entities):
             if not any(candidate_list): # all candidates may be none, we ask for at least one
                 linked_entities.append(None)
+                logger.debug(f"Entity {recognized_entity} has no matching candidates")
                 continue
 
             previously_known_mention, count = self.get_majority_by(candidate_list, "entity_qid")
             major_entity: Entity = previously_known_mention.entity # even if each entity appears 1 time this will be leftmost thus closest
-
+            logger.debug(f"Vector of entity {recognized_entity} is close to the vectors of {major_entity.name}")
             # We can not just return any QID we got from vector query.
             # If the entity is completely unknown there still will be a result
             # Thus check span to be alike one of QID aliases
             if self.similarity(recognized_entity.text, major_entity.aliases) < self.cutoff_threshold:
                 linked_entities.append(None)
+                logger.debug(f"FAIL >> Entity {recognized_entity} failed similarity test with {major_entity.name} aliases")
             else:
                 # 1. Increment number of matches for a vector
                 previously_known_mention.number_of_matches += 1
                 self.db.add(previously_known_mention)
                 linked_entities.append(major_entity)
-                logger.debug(f"Entity recognized as {major_entity.name} {major_entity.qid}")
+                logger.debug(f"SUCC >> Entity recognized as one of {major_entity.name} aliases {major_entity.aliases} ")
 
             
         return linked_entities
