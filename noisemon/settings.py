@@ -14,6 +14,12 @@ env_location = Path("./.env").resolve()
 class Settings(BaseSettings):
     ENVIRONMENT: str = "development"
     DATABASE_URI: str
+
+    REDIS_HOST: str
+    REDIS_PORT: int
+    REDIS_DB: int
+    REDIS_PASSWORD: str
+
     RABBITMQ_URI: str
     RABBITMQ_USERNAME: str
     RABBITMQ_PASSWORD: str
