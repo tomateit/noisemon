@@ -34,19 +34,23 @@ class Processor:
 
 
 
-    def process_data(self, data: DataChunk):
+    def process_data(self, data: Union[DataChunk, Document], transient=False):
         logger.debug("vvvvvvvvvvvvv Processor.process_data called vvvvvvvvvvvvvvvvvv")
-        # 1. Save data to database
-        with self.db.begin_nested():
+        
+        if not transient:
+            # 1. Save data to database
             document = Document(
-                link=data.link,
-                text=data.text,
-                raw_text=data.raw_text,
-                timestamp=dateparser.parse(data.timestamp)
-            )
-            self.db.add(document)
-        self.db.commit()
-        logger.debug(f"Created new document: {data.link}")
+                    link=data.link,
+                    text=data.text,
+                    raw_text=data.raw_text,
+                    timestamp=dateparser.parse(data.timestamp)
+                )
+            with self.db.begin_nested():
+                self.db.add(document)
+                self.db.commit()
+            logger.debug(f"Created new document: {data.link}")
+        else:
+            document=data
 
         # 2. Implicit NER
         doc = self.nlp(document.text)

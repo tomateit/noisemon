@@ -24,7 +24,8 @@ def main(data_path: Path):
 
     processor = Processor()
 
-    for chunk in tqdm(data[100:10000]):
+    # for chunk in tqdm(data[1000:2100]):
+    for chunk in (data[2000:3100]):
         if chunk["type"] != "message": continue
         try:
             text = chunk['text']

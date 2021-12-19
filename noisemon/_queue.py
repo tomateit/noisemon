@@ -38,15 +38,19 @@ class Queue:
         self.channel.exchange_declare(
             exchange=settings.RABBITMQ_EXCHANGE, exchange_type="direct"
         )
-        queue_out = self.channel.queue_declare(
+        queue_in = self.channel.queue_declare(
             queue=settings.RABBITMQ_SOURCE_QUEUE, durable=True
         )
         self.channel.queue_bind(
             exchange=settings.RABBITMQ_EXCHANGE,
-            queue=queue_out.method.queue,
+            queue=queue_in.method.queue,
             routing_key=settings.RABBITMQ_SOURCE_QUEUE,
         )
         logger.info("RabbitMQ channel created successfully")
+
+    def get_message(self):
+        self.channel.basic_get('test')
+
 
     def gracefully_shutdown(self):
         # Cancel the consumer and return any pending messages

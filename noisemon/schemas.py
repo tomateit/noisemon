@@ -11,6 +11,9 @@ class DataChunk(BaseModel):
     raw_text: str
     timestamp: str # datetime is not json serializable
 
+    # class Config:
+    #     orm_mode = True
+
 class EntityType(str, Enum):
     ORGANIZATION = "ORG"
 
