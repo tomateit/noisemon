@@ -1,7 +1,7 @@
 [tool.poetry]
 name = "noisemon"
-version = "0.3.0"
-description = "Module for listening informational noise and making some stats"
+version = "0.4.0"
+description = "NEL pipeline Integrated with KB"
 authors = ["Max Ermakov <maksim_ermakov@protonmail.com>"]
 
 [tool.poetry.dependencies]
@@ -23,6 +23,7 @@ Cython = "^0.29.24"
 dateparser = "^1.1.0"
 psycopg2-binary = "^2.9.2"
 redis = "^4.0.2"
+pyfuseki = "^1.6"
 
 
 [tool.poetry.dev-dependencies]
@@ -33,6 +34,7 @@ black = {version = "^21.7b0", allow-prereleases = true}
 sklearn = "^0.0"
 types-dateparser = "^1.0.8"
 SQLAlchemy-Utils = "^0.37.9"
+jupyterlab = "^3.2.8"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
