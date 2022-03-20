@@ -46,6 +46,7 @@ class Mention(Base):
     def get_all_active_vectors(db: Session) -> Optional[np.ndarray]:
         """
         Returns list of numpy vectors representing Mention.vector's of respective Vector Indices with 'index>=0', sorted in asc
+        Vectors with index<0 considered as deactivated
         """
         with db.begin():
             query = select(Mention).where(Mention.vector_index >= 0).order_by(Mention.vector_index.asc())
