@@ -44,7 +44,6 @@ logger.info("RabbitMQ channel created successfully")
 
 def main():
     myprocessor = Processor()
-    lockpath = Path("./lockfile.lock")
     
     # 1. Recv message
     # 2. Create a lock
@@ -62,7 +61,6 @@ def main():
             myprocessor.process_data(data)
             channel.basic_ack(delivery_tag)
 
-        # break
         
 
 
@@ -70,11 +68,9 @@ def main():
     
 
 if __name__ == '__main__':
-    main()
-    # try:
-    #     main()
-    # except KeyboardInterrupt:
-    #     queue.channel.stop_consuming()
-    # finally:
-    #     # queue.gracefully_shutdown()
-    #     channel.can
+    try:
+        main()
+    except KeyboardInterrupt:
+        queue.channel.stop_consuming()
+    finally:
+        queue.gracefully_shutdown()
