@@ -10,6 +10,7 @@ import numpy as np
 from sqlalchemy import select
 from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, TIMESTAMP, Enum, DateTime, LargeBinary
 from sqlalchemy.orm import relationship, Session
+from sqlalchemy.dialects.postgresql import BYTEA
 
 from database import Base
 from schemas import EntityType
@@ -19,6 +20,23 @@ from .document import Document
 
 def generate_uuid():
     return str(uuid.uuid4())
+
+class NumpyNDArrayFloat32AsBytes(TypeDecorator):
+    impl = BYTEA
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            shape = value.shape
+            value = value.astype(np.float32).reshape((max(shape),)).tobytes()
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            value = np.frombuffer(value, np.float32)
+            shape = value.shape
+            value = value.reshape((max(shape),))
+        return value
 
 
 class Mention(Base):
@@ -36,7 +54,7 @@ class Mention(Base):
     span_end = Column(Integer, name="span_end", nullable=False)
     
     vector_index = Column(Integer, name="vector_index", primary_key=True, nullable=True, default=None) # integer that match vector in faiss index
-    vector = Column(LargeBinary, name="vector", nullable=False) # numpy (d,) vector as bytes "float32"
+    vector = Column(NumpyNDArrayFloat32AsBytes, name="vector", nullable=False) # numpy (d,) vector as bytes "float32"
     # metadata for analytics
     created_at = Column(DateTime, default=datetime.now, nullable=False) 
     number_of_matches = Column(Integer, name="number_of_matches", default=0, nullable=False) # how many times an entity was matched with this vector
@@ -55,8 +73,7 @@ class Mention(Base):
             list_of_retrieved_indices = sorted([int(x.vector_index) for x in query_result])
             assert list_of_retrieved_indices == list(range(len(query_result))), "Retrieved Mention indices must be consequential as 0...len(vecs)"
 
-            query_result = list(map(lambda x: np.frombuffer(x.vector, dtype="float32"), query_result))
-            # db.commit()
+            query_result = [x.vector for x in query_result]
             if query_result:
                 return np.vstack(query_result)
             else:

@@ -1,19 +1,16 @@
-
-from settings import settings
-from processor import Processor
-# from _queue import Queue
-from filelock import FileLock
-import pika
-import pika
 import json
 import logging
+from pathlib import Path
 from threading import Thread
 
-from settings import settings
+import pika
+
 from schemas import DataChunk
-from pathlib import Path
+from settings import settings
+from processor import Processor
 
 
+logging.basicConfig()
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.DEBUG)
 
