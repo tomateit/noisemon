@@ -1,32 +1,57 @@
-from __future__ import annotations
-from typing import List, Optional, Tuple, Set, Any
+from dataclasses import dataclass, asdict
+from typing import Optional, Literal
 from datetime import datetime
-from collections import Counter
-from functools import lru_cache
 
 import uuid
-import sqlalchemy
-import numpy as np
-from sqlalchemy import select
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, TIMESTAMP, Enum, BLOB, DateTime
-from sqlalchemy.orm import relationship, Session
+from sqlalchemy import Column, String, DateTime
+from sqlalchemy.orm import relationship
+from sqlalchemy.dialects.postgresql import JSONB
 
-from database import Base
-from schemas import EntityType
+from noisemon.database.database import Base
 
 
 def generate_uuid():
     return str(uuid.uuid4())
 
-class Document(Base):
+
+@dataclass(kw_only=True)
+class DocumentOrigin:
+    from_process: Literal["news_stream", "kb_population"]
+    link: Optional[str] = None
+    resource: Optional[str] = None
+    timestamp: Optional[datetime] = None
+
+
+@dataclass(kw_only=True)
+class DocumentData:
+    origin: DocumentOrigin
+    text: str   # content as text
+    raw_text: str  # content in raw form, probably with platform-specific markup
+    id: Optional[str] = None
+
+
+class DocumentModel(Base):
     __tablename__ = "documents"
     id = Column(String, name="id", primary_key=True, default=generate_uuid)
-    #  = Column(String, ForeignKey("entities.qid"), nullable=False)
-    link = Column(String, nullable=False)
-    timestamp = Column(DateTime, nullable=False)
+    origin = Column(JSONB, name="origin")
 
-    text=Column(String, nullable=False)
+    text = Column(String, nullable=False)
     raw_text = Column(String, nullable=False)
 
-    mentions = relationship("Mention", back_populates="origin")
+    mentions = relationship("MentionModel", back_populates="origin")
 
+
+def model_to_dataclass(o: DocumentModel) -> DocumentData:
+    return DocumentData(
+        id=o.id,
+        origin=DocumentOrigin(**o.origin),
+        text=o.text,
+        raw_text=o.raw_text,
+    )
+
+def dataclass_to_model(o: DocumentData):
+    return DocumentModel(
+        origin=asdict(o.origin),
+        text=o.text,
+        raw_text=o.raw_text,
+    )

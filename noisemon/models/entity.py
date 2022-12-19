@@ -1,66 +1,95 @@
-from __future__ import annotations
-from typing import List, Optional, Tuple, Set, Any
-from datetime import datetime
-from collections import Counter
-from functools import lru_cache
-
+from dataclasses import dataclass
+from typing import List, Optional, Set
 import uuid
-import sqlalchemy
-import numpy as np
+
 from sqlalchemy import select
-from sqlalchemy import Boolean, Column, ForeignKey, Integer, String, TIMESTAMP, Enum, BLOB, DateTime
+from sqlalchemy import Column, String, Enum
 from sqlalchemy.orm import relationship, Session
+from sqlalchemy.dialects.postgresql import insert
 
-from database import Base
-from schemas import EntityType
-
+from noisemon.database.database import Base
+from noisemon.schemas import EntityType
 
 def generate_uuid():
     return str(uuid.uuid4())
 
 
-class Entity(Base):
+@dataclass(kw_only=True)
+class EntityData:
+    qid: str
+    name: str
+    type: Optional[str]
+
+
+class EntityModel(Base):
     __tablename__ = "entities"
     qid = Column(String, name="qid", primary_key=True)
     name = Column(String, unique=False, nullable=False)
-    type = Column(Enum(EntityType), nullable=False)
-    
-    mentions = relationship("Mention", back_populates="entity")
+    type = Column(Enum(EntityType), nullable=True)
+
+    mentions = relationship("MentionModel", back_populates="entity")
 
     def __repr__(self):
-        return f"Entity[name={self.name},qid={self.qid}]"
+        return f"EntityModel[name={self.name},qid={self.qid}]"
 
     @property
     def aliases(self) -> Set[str]:
         return set([x.span for x in self.mentions])
 
-    @staticmethod
-    def get_entities(db: Session, skip: int = 0, limit: int = 100) -> List[Entity]:
-        return db.query(Entity).offset(skip).limit(limit).all()
 
-    @staticmethod
-    def get_all_entity_qids(db: Session) -> List[str]:
-        query = select(Entity.qid)
-        result = db.execute(query).scalars().all()
-        db.commit()
-        return result
+def dataclass_to_model(o: EntityData) -> EntityModel:
+    return EntityModel(
+        qid=o.qid,
+        name=o.name,
+        type=o.type
+    )
 
-    @staticmethod
-    def get_by_qid(db: Session, qid: str) -> Optional[Entity]:
-        query = (select(Entity).filter_by(qid=qid))
+def get_all_entities_qids(db: Session) -> List[str]:
+    query = select(EntityModel.qid)
+    result = db.execute(query).scalars().all()
+    db.commit()
+    return result
+
+
+def get_by_qid(db: Session, qid: str) -> Optional[EntityModel]:
+    query = (select(EntityModel).filter_by(qid=qid))
+    result = db.execute(query).scalars().first()
+    return result
+
+
+def dataclass_to_dict(o: EntityData) -> dict:
+    return dict(
+        qid=o.qid,
+        name=o.name,
+        type=o.type
+    )
+
+def model_to_dict(o: EntityModel) -> dict:
+    return dict(
+        qid=o.qid,
+        name=o.name,
+        type=o.type
+    )
+
+def get_insert_statement(entity: EntityModel):
+    data = model_to_dict(entity)
+    return insert(EntityModel.__table__).values(**data).on_conflict_do_nothing(index_elements=["qid"])
+
+def get_insert_many_statement(entities: list[EntityModel]):
+    data = [model_to_dict(entity) for entity in entities]
+    return insert(EntityModel.__table__).values(data).on_conflict_do_nothing(index_elements=["qid"])
+
+def upsert_entity(db: Session, qid: str, name: str, type: Optional[EntityType]) -> EntityModel:
+    with db.begin():
+        query = (select(EntityModel).filter_by(qid=qid))
         result = db.execute(query).scalars().first()
-        return result
-    
-    @staticmethod
-    def upsert_entity(db: Session, qid:str, name: str, type: EntityType) -> Entity:
-        if db.in_transaction():
-            db.commit()
-        with db.begin():
-            query = (select(Entity).filter_by(qid=qid))
-            result = db.execute(query).scalars().first()
-            if result:
-                return result
+        if result:
+            return result
 
-            entity = Entity(name=name, type=type, qid=qid)
-            db.add(entity)
-        return entity
+        entity = EntityModel(name=name, type=type, qid=qid)
+        db.add(entity)
+    return entity
+
+
+def get_entities(db: Session, skip: int = 0, limit: int = 100) -> List[EntityModel]:
+    return db.query(EntityModel).offset(skip).limit(limit).all()
