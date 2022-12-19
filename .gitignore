@@ -1,5 +1,6 @@
 .venv
 .vscode
+.idea
 .env
 .env.docker
 .deeppavlov_env
