@@ -1,8 +1,9 @@
-from entity_linker import EntityLinker
 from pathlib import Path
 import spacy
 from spacy.tokens import Doc
 from thinc.api import Ragged
+
+from noisemon.entity_linker import EntityLinker
 
 root_dir = Path(__file__).parent.parent
 model_path = (root_dir / "training/nlp_trf-2.0.0/model-best").resolve()

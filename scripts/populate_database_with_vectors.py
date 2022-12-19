@@ -2,21 +2,18 @@
 # coding: utf-8
 import sys
 sys.path.append("noisemon")
-from typing import List, Dict, Set, Tuple
+from typing import List, Tuple
 import json
-import os
-from datetime import datetime
 from pathlib import Path
 from collections import defaultdict
 
 import torch
 import typer
-import faiss
 import numpy as np
 from tqdm import tqdm
 from wasabi import Printer
 from noisemon.crud import create_vector_index
-from noisemon.database import SessionLocal, engine
+from noisemon.database.database import SessionLocal
 
 try:
     from scripts.char_span_to_vector import ContextualEmbedding

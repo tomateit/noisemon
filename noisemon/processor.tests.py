@@ -1,7 +1,6 @@
 import unittest
 
-
-from .processor import Processor
+from noisemon.processor import Processor
 
 
 class TestProcessor(unittest.TestCase):
@@ -11,13 +10,8 @@ class TestProcessor(unittest.TestCase):
     def test_processor_initialization(self):
         Processor()
 
-
-
-
-
     def tearDown(self):
         self.processor.socket.close()
-
 
 
 if __name__ == "__main__":

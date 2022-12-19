@@ -1,20 +1,17 @@
-from typing import List, Union, Tuple
-import sys
-sys.path.append("noisemon")
+from typing import List
 
-from sqlalchemy import select
 from tqdm import tqdm
-from noisemon.database import *
-from noisemon.models import Mention, Entity, Document
-from noisemon.settings import settings
-from noisemon.database import SessionLocal
+from sqlalchemy import select
+
+from noisemon.models import MentionModel
+from noisemon.database.database import SessionLocal
+
 
 def main():
-
     session = SessionLocal()
 
     with session.begin():
-        query = select(Mention).where(Mention.vector_index >= 0).order_by(Mention.vector_index.asc())
+        query = select(MentionModel).where(MentionModel.vector_index >= 0).order_by(MentionModel.vector_index.asc())
         query_result = session.execute(query).scalars().all()
 
     index_to_entity_map = {int(x.vector_index): x for x in query_result}
@@ -30,7 +27,8 @@ def main():
 
     session.commit()
     print("Reconcilation is complete.")
-    
+
+
 def get_holes(indices: List[int]) -> List[int]:
     indices = indices.copy()
     list_of_holes = []
@@ -48,19 +46,16 @@ def reconcile(indices: List[int]):
     n = len(indices)
     desired_order = list(range(n))
     indices = sorted(indices.copy())
-    map_ = {actual: actual  for actual in (indices)}
+    map_ = {actual: actual for actual in (indices)}
     while sorted(map_.values()) != desired_order:
         last_key = indices.pop()
         for i in range(n):
             if i not in set(map_.values()):
-                map_[last_key]= i
+                map_[last_key] = i
                 break
-        
-            
-    return [(key, value) for key, value in map_.items() if key!=value]
-    
 
-if __name__=="__main__":
+    return [(key, value) for key, value in map_.items() if key != value]
+
+
+if __name__ == "__main__":
     main()
-
-

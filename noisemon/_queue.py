@@ -1,13 +1,9 @@
 import pika
 import json
-import logging
 
-from settings import settings
-from schemas import DataChunk
-
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
+from noisemon.logger import logger
+from noisemon.settings import settings
+from noisemon.schemas import DataChunk
 
 
 class Queue:

@@ -1,8 +1,8 @@
-from pydantic import BaseModel
-from enum import Enum
 from typing import List, Optional, Tuple, Union
-from datetime import datetime
-from database import Base
+from enum import Enum
+
+from pydantic import BaseModel
+
 
 class DataChunk(BaseModel):
     # origin: str

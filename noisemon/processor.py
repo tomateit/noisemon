@@ -1,26 +1,20 @@
 from typing import List, Union
-import logging
 import warnings
-warnings.filterwarnings("ignore", category=UserWarning)
-from pathlib import Path
-from collections import defaultdict
-from datetime import datetime 
 
-import spacy
 import dateparser
 from spacy.tokens import Span
 
-from schemas import DataChunk
-from models import Entity, Mention, Document
-from database import SessionLocal, engine
-from entity_linker import EntityLinker
-from dataset_populator import DatasetPopulator
-from components.custom_components import *
+from noisemon.schemas import DataChunk
+from noisemon.models import EntityModel, MentionModel, DocumentModel
+from noisemon.database.database import SessionLocal
+from noisemon.entity_linker import EntityLinker
+from noisemon.dataset_population.dataset_populator import DatasetPopulator
+from noisemon.components.custom_components import *
+from noisemon.logger import logger
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.DEBUG)
-
+warnings.filterwarnings("ignore", category=UserWarning)
 Span.set_extension("trf_vector", default=None, force=True)
+
 
 class Processor:
     def __init__(self):
@@ -32,42 +26,41 @@ class Processor:
         self.entity_linker = EntityLinker()
         self.dataset_populator = DatasetPopulator(self.entity_linker, self.nlp)
 
-
-
-    def process_data(self, data: Union[DataChunk, Document], transient=False):
+    def process_data(self, data: Union[DataChunk, DocumentModel], transient=False):
         logger.debug("vvvvvvvvvvvvv Processor.process_data called vvvvvvvvvvvvvvvvvv")
-        
+
         if not transient:
             # 1. Save data to database
-            document = Document(
-                    link=data.link,
-                    text=data.text,
-                    raw_text=data.raw_text,
-                    timestamp=dateparser.parse(data.timestamp)
-                )
+            document = DocumentModel(
+                link=data.link,
+                text=data.text,
+                raw_text=data.raw_text,
+                timestamp=dateparser.parse(data.timestamp)
+            )
             with self.db.begin_nested():
                 self.db.add(document)
                 self.db.commit()
             logger.debug(f"Created new document: {data.link}")
         else:
-            document=data
+            document = data
 
         # 2. Implicit NER
         doc = self.nlp(document.text)
-        recognized_entities = [entity for entity in doc.ents if entity.label_ == "ORG" and entity._.trf_vector is not None]
+        recognized_entities = [entity for entity in doc.ents if
+                               entity.label_ == "ORG" and entity._.trf_vector is not None]
         logger.debug(f"Recognized entities: {recognized_entities}")
         if not recognized_entities: return
 
         # 3. Match named linked_entities with KB linked_entities
-        linked_entities: List[Union[Entity, None]] = self.entity_linker.link_entities(doc)
+        linked_entities: List[Union[EntityModel, None]] = self.entity_linker.link_entities(doc)
         assert len(recognized_entities) == len(linked_entities), f"Each span shall be matched with entity or None"
 
         # 4. Try to find extra entities
         newly_created_entities = self.dataset_populator.ticker_strategy(doc, linked_entities)
-        
-        
+
         # 5. Store mentions for all entities in database
-        for linked_entity, recognized_entity, new_entity in zip(linked_entities, recognized_entities, newly_created_entities):
+        for linked_entity, recognized_entity, new_entity in zip(linked_entities, recognized_entities,
+                                                                newly_created_entities):
             if (linked_entity is None) and (new_entity is None): continue
             if linked_entity:
                 marker = "from_entity_linker"
@@ -81,7 +74,7 @@ class Processor:
             logger.debug(f"(*) {marker} New mention will be created for {entity.name} as {recognized_entity}")
             # continue
             with self.db.begin_nested():
-                new_mention = Mention(
+                new_mention = MentionModel(
                     entity_qid=entity.qid,
                     origin_id=document.id,
                     span=recognized_entity.text,
@@ -93,7 +86,3 @@ class Processor:
                 self.entity_linker.vector_index.add_entity_vector_from_mention(new_mention)
         self.db.commit()
         logger.debug("^^^^^^^^^^^^^^^ Processor.process_data finished working ^^^^^^^^^^^^^^^^^^")
-
-
-        
-

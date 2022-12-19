@@ -1,18 +1,13 @@
 import json
-import sys
-sys.path.append("noisemon")
-from typing import Optional
 from pathlib import Path
-from functools import lru_cache
-from pprint import pprint
 
 import typer
 from tqdm import tqdm
 from wasabi import Printer
 
-from noisemon.database import SessionLocal
-from noisemon.crud import create_entity, get_all_vector_index_qids
-from noisemon.data_processing.wikidata import Wikidata
+from noisemon.database.database import SessionLocal
+from noisemon.models.entity import create_entity, get_all_vector_index_qids
+from noisemon.database.wikidata import Wikidata
 from noisemon.schemas import EntityType
 msg = Printer()
 
