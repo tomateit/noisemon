@@ -1,3 +1,4 @@
+from spacy.pipeline import entity_linker
 import typer
 from pathlib import Path
 
@@ -8,10 +9,13 @@ from spacy.training import Example
 # we need to import this to parse the custom reader from the config
 from custom_functions import create_docbin_reader
 
+from noisemon.entity_linker import EntityLinker
 
 def main(nlp_dir: Path, test_set: Path):
     """ Evaluate the new Entity Linking component by applying it to unseen text. """
     nlp = spacy.util.load_model_from_path(nlp_dir)
+    entity_linker = EntityLinker()
+    
     examples = []
     doc_bin = DocBin().from_disk(test_set)
     docs = doc_bin.get_docs(nlp.vocab)

@@ -4,7 +4,7 @@ import faiss
 import numpy as np
 
 from noisemon.database.database import SessionLocal
-from noisemon.models import MentionModel
+from noisemon.models.mention import MentionModel
 from noisemon.logger import logger
 
 

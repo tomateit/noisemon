@@ -14,3 +14,6 @@ def get_majority_by(candidates: List, field: str):
     raise Exception("WTF")
 
 
+def qid_from_uri(uri: str) -> str:
+    qid = uri[uri.index("Q"):]
+    return qid

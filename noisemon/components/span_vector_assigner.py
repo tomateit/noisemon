@@ -3,7 +3,7 @@ from typing import Tuple, List, Iterable, Optional, Dict, Callable, Any
 from spacy.tokens.doc import Doc
 from spacy.tokens import Span
 from wasabi import Printer
-from spacy import Language
+from spacy.language import Language
 from spacy.tokens import Doc
 import numpy as np
 from thinc.api import Ragged

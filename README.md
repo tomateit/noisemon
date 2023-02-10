@@ -3,6 +3,13 @@
 The core of this app is adaptive mechanism of Vector Index-based entity linking with online population.
 
 
+### Subtasks
+1. Identify entities - NER
+    + spaCy is used for the named entity recognition
+2. Link the entities - NEL
+    + Vector Index is used for entity linking
+
+
 #### This is a service, which means:
 + It has quite limited purpose now: find entities in provided texts and link them to some wikidata entities.
 + Components are quite independent and (as I tried most) not coupled, 

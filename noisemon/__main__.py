@@ -47,7 +47,10 @@ def main():
     while (True):
         if channel.is_closed:
             channel.open()
-        method_frame, header_frame, body = channel.basic_get(queue=settings.RABBITMQ_SOURCE_QUEUE, auto_ack=False)
+        method_frame, header_frame, body = channel.basic_get(
+            queue=settings.RABBITMQ_SOURCE_QUEUE, 
+            auto_ack=False
+        )
         if method_frame:
             delivery_tag = method_frame.delivery_tag
             data = json.loads(body)
@@ -60,6 +63,6 @@ if __name__ == '__main__':
     try:
         main()
     except KeyboardInterrupt:
-        queue.channel.stop_consuming()
+        queue_in.channel.stop_consuming()
     finally:
-        queue.gracefully_shutdown()
+        queue_in.gracefully_shutdown()

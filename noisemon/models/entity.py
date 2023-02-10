@@ -27,7 +27,7 @@ class EntityModel(Base):
     name = Column(String, unique=False, nullable=False)
     type = Column(Enum(EntityType), nullable=True)
 
-    mentions = relationship("MentionModel", back_populates="entity")
+    mentions = relationship("MentionModel", back_populates="entity", cascade="all,delete")
 
     def __repr__(self):
         return f"EntityModel[name={self.name},qid={self.qid}]"

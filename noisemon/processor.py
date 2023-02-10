@@ -5,7 +5,9 @@ import dateparser
 from spacy.tokens import Span
 
 from noisemon.schemas import DataChunk
-from noisemon.models import EntityModel, MentionModel, DocumentModel
+from noisemon.models.entity import EntityModel
+from noisemon.models.mention import MentionModel
+from noisemon.models.document import DocumentModel
 from noisemon.database.database import SessionLocal
 from noisemon.entity_linker import EntityLinker
 from noisemon.dataset_population.dataset_populator import DatasetPopulator
