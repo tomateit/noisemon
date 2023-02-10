@@ -18,7 +18,7 @@ from noisemon.models.document import DocumentModel
 from noisemon.tools.retry_request import retry_request
 from noisemon.tools.cache_to_redis import get_cacher
 from noisemon.tools.tools import qid_from_uri
-from noisemon.schemas import EntityType
+from noisemon.entity_recognizer import EntityType
 from noisemon.database.database import SessionLocal
 from noisemon.logger import logger
 
