@@ -4,15 +4,15 @@ ENV ENVIRONMENT=production
 
 WORKDIR /code
 
-RUN apt update && apt upgrade -y
+RUN apt update && apt upgrade -y & apt install curl
 
-RUN pip install 'poetry==1.1.7'
+RUN curl -sSL https://install.python-poetry.org | python3 -
 
 RUN poetry config virtualenvs.create false
 
 COPY poetry.lock pyproject.toml /code/
 
-RUN poetry install --no-dev
+RUN poetry install
 
 COPY ./ /code/
 
