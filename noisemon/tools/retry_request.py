@@ -19,6 +19,11 @@ def retry_request(function):
                 logger.debug(f"Encountered 429. Gonna sleep for {timeout} and retry")
                 sleep(timeout)
                 return retried_function(*args, **kwargs)
+            elif e.code == 403:
+                timeout += 5
+                logger.debug(f"Encountered 403. Gonna sleep for {timeout} and retry")
+                sleep(timeout)
+                return retried_function(*args, **kwargs)
             else:
                 raise
 
