@@ -29,17 +29,11 @@ warnings.filterwarnings("ignore", category=UserWarning)
 
 class Processor:
     def __init__(self):
-        model_path = (Path(__file__).parent.parent / "training/nlp_trf-2.0.0/model-best").resolve()
-        # self.nlp = spacy.load(model_path)
-        # self.nlp.add_pipe("span_vector_assigner.v1")
         self.db = SessionLocal()
         self.entity_recognizer = EntityRecognizer()
         self.entity_linker = EntityLinker()
-        # self.dataset_populator = DatasetPopulator(self.entity_linker, self.nlp)
 
     def process_data(self, data: Union[DataChunk, DocumentModel], transient=False):
-        logger.debug("vvvvvvvvvvvvv Processor.process_data called vvvvvvvvvvvvvvvvvv")
-
         if not transient:
             # 1. Save data to database
             document = DocumentModel(
@@ -55,11 +49,10 @@ class Processor:
         else:
             document = data
 
-        # 2. Implicit NER
-        # doc = self.nlp(document.text)
+
         recognized_entities = self.entity_recognizer.process(document)
         logger.debug(f"Recognized entities: {recognized_entities}")
-        if not recognized_entities: return
+        if not recognized_entities: return []
 
         # 3. Match named linked_entities with KB linked_entities
         linked_entities: List[Union[EntityModel, None]] = self.entity_linker.link_entities_raw(recognized_entities)
