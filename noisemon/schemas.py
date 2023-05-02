@@ -1,3 +1,7 @@
+"""
+Schemas file is used for external contract and data shape specification
+For application-wide models use noisemon.models
+"""
 from typing import List, Optional, Tuple, Union
 from enum import Enum
 
@@ -14,10 +18,9 @@ class DataChunk(BaseModel):
     # class Config:
     #     orm_mode = True
 
-class EntityType(str, Enum):
-    ORGANIZATION = "ORG"
 
-class Entity(BaseModel):
-    name: str
-    type: EntityType
+
+# class Entity(BaseModel):
+#     name: str
+#     type: EntityType
 

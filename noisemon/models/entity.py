@@ -8,7 +8,7 @@ from sqlalchemy.orm import relationship, Session
 from sqlalchemy.dialects.postgresql import insert
 
 from noisemon.database.database import Base
-from noisemon.schemas import EntityType
+from noisemon.entity_recognizer import EntityType
 
 def generate_uuid():
     return str(uuid.uuid4())

@@ -2,35 +2,38 @@ from typing import List, Union
 import warnings
 
 import dateparser
-from spacy.tokens import Span
+try:
+    from spacy.tokens import Span
+    from noisemon.components.custom_components import *
+    Span.set_extension("trf_vector", default=None, force=True)
+except ImportError:
+    pass
 
+
+from noisemon.logger import logger
 from noisemon.schemas import DataChunk
+from noisemon.database.database import SessionLocal
+
 from noisemon.models.entity import EntityModel
 from noisemon.models.mention import MentionModel
 from noisemon.models.document import DocumentModel
-from noisemon.database.database import SessionLocal
+
 from noisemon.entity_linker import EntityLinker
+from noisemon.entity_recognizer import EntityRecognizer
+
 from noisemon.dataset_population.dataset_populator import DatasetPopulator
-from noisemon.components.custom_components import *
-from noisemon.logger import logger
 
 warnings.filterwarnings("ignore", category=UserWarning)
-Span.set_extension("trf_vector", default=None, force=True)
+
 
 
 class Processor:
     def __init__(self):
-        model_path = (Path(__file__).parent.parent / "training/nlp_trf-2.0.0/model-best").resolve()
-        self.nlp = spacy.load(model_path)
-        self.nlp.add_pipe("span_vector_assigner.v1")
         self.db = SessionLocal()
-        # self.entity_recognizer = EntityRecognizer(nlp=self.nlp)
+        self.entity_recognizer = EntityRecognizer()
         self.entity_linker = EntityLinker()
-        self.dataset_populator = DatasetPopulator(self.entity_linker, self.nlp)
 
     def process_data(self, data: Union[DataChunk, DocumentModel], transient=False):
-        logger.debug("vvvvvvvvvvvvv Processor.process_data called vvvvvvvvvvvvvvvvvv")
-
         if not transient:
             # 1. Save data to database
             document = DocumentModel(
@@ -46,23 +49,26 @@ class Processor:
         else:
             document = data
 
-        # 2. Implicit NER
-        doc = self.nlp(document.text)
-        recognized_entities = [entity for entity in doc.ents if
-                               entity.label_ == "ORG" and entity._.trf_vector is not None]
+
+        recognized_entities = self.entity_recognizer.process(document)
         logger.debug(f"Recognized entities: {recognized_entities}")
-        if not recognized_entities: return
+        if not recognized_entities: return []
 
         # 3. Match named linked_entities with KB linked_entities
-        linked_entities: List[Union[EntityModel, None]] = self.entity_linker.link_entities(doc)
+        linked_entities: List[Union[EntityModel, None]] = self.entity_linker.link_entities_raw(recognized_entities)
         assert len(recognized_entities) == len(linked_entities), f"Each span shall be matched with entity or None"
 
         # 4. Try to find extra entities
-        newly_created_entities = self.dataset_populator.ticker_strategy(doc, linked_entities)
+        logger.warning("Datase population is disabled") #TODO fix
+        # newly_created_entities = self.dataset_populator.ticker_strategy(doc, linked_entities)
+        newly_created_entities = [None] * len(recognized_entities)
 
         # 5. Store mentions for all entities in database
-        for linked_entity, recognized_entity, new_entity in zip(linked_entities, recognized_entities,
-                                                                newly_created_entities):
+        for linked_entity, recognized_entity, new_entity in zip(
+                linked_entities, 
+                recognized_entities,
+                newly_created_entities
+            ):
             if (linked_entity is None) and (new_entity is None): continue
             if linked_entity:
                 marker = "from_entity_linker"
@@ -79,10 +85,10 @@ class Processor:
                 new_mention = MentionModel(
                     entity_qid=entity.qid,
                     origin_id=document.id,
-                    span=recognized_entity.text,
-                    span_start=recognized_entity.start_char,
-                    span_end=recognized_entity.end_char,
-                    vector=recognized_entity._.trf_vector,
+                    span=recognized_entity["word"],
+                    span_start=recognized_entity["start_char"],
+                    span_end=recognized_entity["end_char"],
+                    vector=recognized_entity["vector"],
                 )
                 self.db.add(new_mention)
                 self.entity_linker.vector_index.add_entity_vector_from_mention(new_mention)

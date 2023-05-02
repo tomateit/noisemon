@@ -8,7 +8,7 @@ from wasabi import Printer
 from noisemon.database.database import SessionLocal
 from noisemon.models.entity import create_entity, get_all_vector_index_qids
 from noisemon.database.wikidata import Wikidata
-from noisemon.schemas import EntityType
+from noisemon.entity_recognizer import EntityType #TODO this usage shall be limited to entity recognizer
 msg = Printer()
 
 
