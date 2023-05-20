@@ -1,5 +1,5 @@
 import logging
 
 logging.basicConfig()
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("noisemon")
 logger.setLevel(logging.DEBUG)

@@ -6,9 +6,12 @@ from transformers import pipeline
 
 from noisemon.tools.span_to_vector import span_to_vector
 from noisemon.tools.char_span_to_vector import ContextualEmbedding
+from noisemon.logger import logger
 
-class EntityType(str, Enum):
-    ORGANIZATION = "ORG"
+logger = logger.getChild(__name__)
+
+# class EntityType(str, Enum):
+#     ORGANIZATION = "ORG"
 
 
 class EntityRecognizer:
