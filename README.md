@@ -1,21 +1,10 @@
 # NOISEMON (0.4)
-## NER + NEL + KB integration pipeline
-The core of this app is adaptive mechanism of Vector Index-based entity linking with online population.
-
+## NER + NEL pipeline
+The core of this app is adaptive mechanism of Vector Index-based entity linking.
 
 ### Subtasks
 1. Identify entities - NER
-    + spaCy is used for the named entity recognition
 2. Link the entities - NEL
-    + Vector Index is used for entity linking
-
-
-#### This is a service, which means:
-+ It has quite limited purpose now: find entities in provided texts and link them to some wikidata entities.
-+ Components are quite independent and (as I tried most) not coupled, 
-+ ... so one basically can use it as a standalone script
-+ ... yet it is designed to work with some database
-+ The app is intended to be build into some data exchange framework (in this case - RabbitMQ), it has no data retrieving capabilities
 
 
 ### What the app currently does:
