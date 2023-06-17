@@ -4,24 +4,22 @@ import warnings
 import dateparser
 try:
     from spacy.tokens import Span
-    from noisemon.components.custom_components import *
+    from noisemon.domain.services import *
     Span.set_extension("trf_vector", default=None, force=True)
 except ImportError:
     pass
 
 
 from noisemon.logger import logger
-from noisemon.schemas import DataChunk
+from noisemon.schemas.schemas import DataChunk
 from noisemon.database.database import SessionLocal
 
-from noisemon.models.entity import EntityModel
-from noisemon.models.mention import MentionModel
-from noisemon.models.document import DocumentModel
+from noisemon.domain.models.entity import EntityModel
+from noisemon.domain.models.mention import MentionModel
+from noisemon.domain.models.document import DocumentModel
 
 from noisemon.entity_linker import EntityLinker
 from noisemon.entity_recognizer import EntityRecognizer
-
-from noisemon.dataset_population.dataset_populator import DatasetPopulator
 
 warnings.filterwarnings("ignore", category=UserWarning)
 

@@ -2,7 +2,7 @@ import json
 
 import pika
 
-from noisemon.schemas import DataChunk
+from noisemon.schemas.schemas import DataChunk
 from noisemon.settings import settings
 from noisemon.processor import Processor
 from noisemon.logger import logger

@@ -3,7 +3,7 @@ import json
 
 from noisemon.logger import logger
 from noisemon.settings import settings
-from noisemon.schemas import DataChunk
+from noisemon.schemas.schemas import DataChunk
 
 
 class Queue:

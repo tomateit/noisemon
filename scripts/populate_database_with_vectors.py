@@ -1,9 +1,6 @@
 #!/usr/bin/env python
 # coding: utf-8
-from typing import List, Tuple
-from pathlib import Path
-from collections import defaultdict
-from sqlalchemy import select, func
+from sqlalchemy import select
 
 import torch
 import typer
@@ -12,9 +9,8 @@ from tqdm import tqdm
 
 from noisemon.database.database import SessionLocal
 from noisemon.logger import logger
-from noisemon.models.mention import MentionModel
-from noisemon.models.document import DocumentModel
-from noisemon.models.entity import EntityModel
+from noisemon.domain.models.mention import MentionModel
+from noisemon.domain.models.document import DocumentModel
 from noisemon.tools.char_span_to_vector import ContextualEmbedding
 
 

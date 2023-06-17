@@ -6,15 +6,13 @@ I do a prototype.
 from time import sleep
 
 import typer
-from SPARQLWrapper import SPARQLWrapper, JSON, RDF
+from SPARQLWrapper import SPARQLWrapper, JSON
 from sqlalchemy import select
 import sqlalchemy.sql.functions as func
 from tqdm import tqdm
 
 from noisemon.settings import settings
-from noisemon.models.entity import EntityModel
-from noisemon.models.mention import MentionModel
-from noisemon.models.document import DocumentModel
+from noisemon.domain.models.entity import EntityModel
 from noisemon.tools.retry_request import retry_request
 from noisemon.tools.cache_to_redis import get_cacher
 from noisemon.tools.tools import qid_from_uri

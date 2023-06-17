@@ -14,15 +14,15 @@ except ImportError:
 # import crud
 from noisemon.logger import logger
 from noisemon.vector_index import VectorIndex
-from noisemon.models.entity import EntityModel
-from noisemon.models.mention import MentionModel
+from noisemon.domain.models.entity import EntityModel
+from noisemon.domain.models.mention import MentionModel
 from noisemon.database.database import SessionLocal
 from noisemon.tools.flat_map import flat_map
 from noisemon.tools.tools import get_majority_by
 from noisemon.tools.similarity import similarity
 
 
-class EntityLinker:
+class EntityLinkerLocalImpl(EntityLinker):
     def __init__(
             self,
             k_neighbors: int = 4,
@@ -145,7 +145,3 @@ class EntityLinker:
                 logger.debug(f"SUCC >> Entity recognized as one of {major_entity.name} aliases {major_entity.aliases} ")
 
         return linked_entities
-
-
-
-
