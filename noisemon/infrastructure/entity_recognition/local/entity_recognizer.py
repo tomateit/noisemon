@@ -1,4 +1,5 @@
 from enum import Enum
+from typing import Literal
 
 import torch
 from transformers import AutoModelForTokenClassification, AutoTokenizer
@@ -16,7 +17,7 @@ logger = logger.getChild(__name__)
 from pydantic import BaseModel
 
 class HFEntity(BaseModel):
-    entity_group: str
+    entity_group: Literal["MISC", "ORG", "PER", "LOC", "O"]
     score: float
     word: str
     start: int
@@ -33,15 +34,21 @@ def hf_entity_to_entity_span(hf_entity: HFEntity) -> EntitySpan:
 
 class EntityRecognizerLocalImpl(EntityRecognizer):
     def __init__(self, model_name="Jean-Baptiste/roberta-large-ner-english"):
+        model_name = "Jean-Baptiste/roberta-large-ner-english"
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForTokenClassification.from_pretrained(model_name)
-        self.nlp = pipeline('ner', model=self.model, tokenizer=self.tokenizer, aggregation_strategy="simple")
+        self.nlp = pipeline(
+            'ner',
+            model=self.model,
+            tokenizer=self.tokenizer,
+            aggregation_strategy="simple"
+        )
         self.embedder = ContextualEmbedding(model_name=model_name)
 
     def recognize_entities(self, text):
         output = self.nlp(text)
         output: list[HFEntity] = [HFEntity(**e) for e in output]
-        result = [hf_entity_to_entity_span(e) for e in output]
+        result = [hf_entity_to_entity_span(e) for e in output if e.entity_group == "ORG"]
         return result
 
 
