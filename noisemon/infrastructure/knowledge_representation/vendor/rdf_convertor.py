@@ -1,5 +1,5 @@
 from noisemon.domain.models.mention import MentionModel
-from noisemon.domain.services.information_representation.rdf_convertor import RDFConvertor
+from noisemon.domain.services.knowledge_representation.rdf_convertor import RDFConvertor
 
 
 class RDFConvertorVendorImpl(RDFConvertor):
