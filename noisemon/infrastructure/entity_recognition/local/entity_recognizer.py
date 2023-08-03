@@ -1,4 +1,4 @@
-from enum import Enum
+from dataclasses import dataclass
 from typing import Literal
 
 import torch
@@ -7,16 +7,12 @@ from transformers import pipeline
 
 from noisemon.domain.models.entity_span import EntitySpan
 from noisemon.domain.services.entity_recognition.entity_recognizer import EntityRecognizer
-from noisemon.tools.span_to_vector import span_to_vector
-from noisemon.tools.char_span_to_vector import ContextualEmbedding
 from noisemon.logger import logger
 
 logger = logger.getChild(__name__)
 
-
-from pydantic import BaseModel
-
-class HFEntity(BaseModel):
+@dataclass
+class HFEntity:
     entity_group: Literal["MISC", "ORG", "PER", "LOC", "O"]
     score: float
     word: str
@@ -38,12 +34,11 @@ class EntityRecognizerLocalImpl(EntityRecognizer):
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForTokenClassification.from_pretrained(model_name)
         self.nlp = pipeline(
-            'ner',
+            "ner",
             model=self.model,
             tokenizer=self.tokenizer,
             aggregation_strategy="simple"
         )
-        self.embedder = ContextualEmbedding(model_name=model_name)
 
     def recognize_entities(self, text):
         output = self.nlp(text)

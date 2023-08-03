@@ -1,6 +1,8 @@
-from pydantic import BaseModel
+from dataclasses import dataclass
 
-class EntitySpan(BaseModel):
+
+@dataclass(kw_only=True)
+class EntitySpan:
     span: str
     span_start: int
     span_end: int

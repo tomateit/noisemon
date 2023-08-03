@@ -1,9 +1,9 @@
-from pydantic import BaseModel
+from dataclasses import dataclass
 
-from noisemon.domain.models.entity import EntityModel
+from noisemon.domain.models.entity import EntityData
 
-
-class Triplet(BaseModel):
-    subject: EntityModel | str
+@dataclass(kw_only=True)
+class Triplet:
+    subject: EntityData | str
     predicate: str
-    object: EntityModel| str
+    object: EntityData | str
