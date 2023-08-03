@@ -1,7 +1,7 @@
 import json
 import typer
 from pathlib import Path
-from spacy.tokens import Span, DocBin, Doc
+from spacy.tokens import DocBin
 from spacy.vocab import Vocab
 from wasabi import Printer
 import json
@@ -28,7 +28,7 @@ def main(input_path: Path = typer.Option(None), output_folder: Path = typer.Opti
     msg.info(f"{input_path} is being processed.")
     data = json.loads(input_path.read_text())
     # Quite custom ....
-    vocab = Vocab()
+    Vocab()
 
     # 1. Create NER Spacy Dataset
     output = []

@@ -4,7 +4,7 @@ from noisemon.domain.models.entity_span import EntitySpan
 def calculate_partial_match_f1_score(ground_truth_entities: List[EntitySpan], predicted_entities: List[EntitySpan]):
     # Convert ground truth and predicted entities to sets for faster lookup
     ground_truth_set = {(entity.span_start, entity.span_end): entity for entity in ground_truth_entities}
-    predicted_set = {(entity.span_start, entity.span_end): entity for entity in predicted_entities}
+    {(entity.span_start, entity.span_end): entity for entity in predicted_entities}
 
     # Initialize counters for true positives, false positives, and false negatives
     true_positives = 0

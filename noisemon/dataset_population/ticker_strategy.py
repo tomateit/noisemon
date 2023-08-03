@@ -24,7 +24,7 @@ def ticker_strategy(doc: Doc, linked_entities) -> List[Optional[EntityModel]]:
     # 2.  Extract tickers
     tickers = ticker_processor.extract_tickers(doc.text)  # tickers are unique
     if not tickers:
-        logger.debug(f"No tickers detected. Quitting the strategy")
+        logger.debug("No tickers detected. Quitting the strategy")
         return []
     logger.debug(f"Detected Tickers: {tickers}")
 
@@ -89,7 +89,7 @@ def ticker_strategy(doc: Doc, linked_entities) -> List[Optional[EntityModel]]:
                 continue
             else:
                 # no such known entity in db, creation process
-                name = wikidata.lookup_entity_label_by_qid(QID)
+                wikidata.lookup_entity_label_by_qid(QID)
                 # with self.db.begin_nested():
                 #     entity = Entity(qid=QID, name=name, type=EntityType.ORGANIZATION)
                 #     logger.info(f"Creating new entity: {QID} as {name}")

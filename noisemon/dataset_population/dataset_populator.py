@@ -25,7 +25,7 @@ class DatasetPopulator:
 
     def populate(self, text, linked_entities: List[Optional[EntityModel]]):
         """Entry point"""
-        new_entities = ticker_strategy(text, linked_entities)
+        ticker_strategy(text, linked_entities)
 
 
 

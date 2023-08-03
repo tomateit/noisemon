@@ -2,8 +2,6 @@
 Schemas file is used for external contract and data shape specification
 For application-wide models use noisemon.models
 """
-from typing import List, Optional, Tuple, Union
-from enum import Enum
 
 from pydantic import BaseModel
 

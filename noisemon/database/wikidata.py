@@ -1,7 +1,7 @@
-from typing import List, Dict, Set, Optional
+from typing import List, Dict, Optional
 from collections import defaultdict
 
-from SPARQLWrapper import SPARQLWrapper, JSON, XML, N3, RDF
+from SPARQLWrapper import SPARQLWrapper, JSON
 
 from noisemon.tools.cache_to_redis import get_cacher
 from noisemon.tools.retry_request import retry_request

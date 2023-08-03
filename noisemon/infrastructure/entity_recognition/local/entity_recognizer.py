@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from typing import Literal
 
-import torch
 from transformers import AutoModelForTokenClassification, AutoTokenizer
 from transformers import pipeline
 

@@ -61,7 +61,7 @@ def check_entity(qid: str) -> bool:
 def main():
     db = SessionLocal()
     db.begin()
-    count_statement = select(func.count(EntityModel.qid)).where(EntityModel.type == None)
+    count_statement = select(func.count(EntityModel.qid)).where(EntityModel.type is None)
     count = db.execute(count_statement).scalar()
     logger.info(f"Found {count} entities without type")
     statement = select(EntityModel).filter_by(type=None)

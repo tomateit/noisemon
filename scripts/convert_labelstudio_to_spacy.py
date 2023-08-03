@@ -1,8 +1,6 @@
 import spacy
-from spacy import Vocab
 
-from spacy.tokens import Span, DocBin, Doc
-from spacy.vocab import Vocab
+from spacy.tokens import Doc
 from wasabi import Printer
 from typing import List, Callable, Dict
 from pydantic import BaseModel

@@ -1,19 +1,14 @@
-from typing import List
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.resolve() / "noisemon"))
 print(sys.path)
-import time
-import logging
 
 import typer
 from pathlib import Path
 from tqdm import tqdm
-from schemas import DataChunk
 from models import Document
 from database import SessionLocal
 
-from functools import lru_cache
 from processor import Processor
 
 

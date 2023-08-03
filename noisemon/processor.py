@@ -54,7 +54,7 @@ class Processor:
 
         # 3. Match named linked_entities with KB linked_entities
         linked_entities: List[Union[EntityModel, None]] = self.entity_linker.link_entities_raw(recognized_entities)
-        assert len(recognized_entities) == len(linked_entities), f"Each span shall be matched with entity or None"
+        assert len(recognized_entities) == len(linked_entities), "Each span shall be matched with entity or None"
 
         # 4. Try to find extra entities
         logger.warning("Datase population is disabled") #TODO fix

@@ -4,16 +4,13 @@ from pathlib import Path
 sys.path.append(str(Path(__file__).parent.parent.resolve() / "noisemon"))
 print(sys.path)
 import time
-import logging
 
 import json
 import typer
 from pathlib import Path
-from tqdm import tqdm
 from schemas import DataChunk
 import regex
 
-from functools import lru_cache
 from processor import Processor
 
 
@@ -28,7 +25,7 @@ def main(data_path: Path):
     for chunk in (data[2000:3100]):
         if chunk["type"] != "message": continue
         try:
-            text = chunk['text']
+            text = chunk["text"]
             if type(text) == list:
                 text = glue_chunks(text)
         except Exception as e:

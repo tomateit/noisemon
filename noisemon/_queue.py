@@ -45,7 +45,7 @@ class Queue:
         logger.info("RabbitMQ channel created successfully")
 
     def get_message(self):
-        self.channel.basic_get('test')
+        self.channel.basic_get("test")
 
 
     def gracefully_shutdown(self):

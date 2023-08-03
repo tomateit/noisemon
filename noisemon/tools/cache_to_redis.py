@@ -1,7 +1,6 @@
 from typing import Union
 import redis
 import json
-from functools import wraps
 
 def get_cacher(redis_params, EXPIRE=60*60*24):
     """

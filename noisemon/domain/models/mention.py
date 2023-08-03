@@ -1,10 +1,9 @@
 import uuid
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import Optional
 from datetime import datetime
 
 import numpy as np
-from noisemon.database.database import Base
 
 
 def generate_uuid():

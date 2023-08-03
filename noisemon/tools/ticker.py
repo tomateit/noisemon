@@ -1,10 +1,8 @@
-from typing import List, Tuple
+from typing import List
 
-import spacy
 import regex
 import reticker
 
-from noisemon.logger import logger
 
 
 class TickerProcessor():

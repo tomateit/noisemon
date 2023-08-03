@@ -1,8 +1,6 @@
-from dataclasses import dataclass, asdict
-from typing import Optional, Literal
-from datetime import datetime
+from dataclasses import dataclass
+from typing import Optional
 
-from noisemon.database.database import Base
 
 #
 # def generate_uuid():
