@@ -1,8 +1,9 @@
 """
 One and only module that opetares with faiss index and performs vector search
 """
+from dataclasses import dataclass
 from pathlib import Path
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Any
 from functools import partial as p
 
 import faiss
@@ -23,19 +24,20 @@ from noisemon.domain.services.entity_linking.entity_linker import EntityLinker
 
 cwd = Path(__file__).resolve()
 
+@dataclass
+class MemoryData:
+    entity_qid: str
+    span: str
+    vector: np.ndarray
 
-# def validate_input_data(self, data: Any, check_first_dim=False):
-#     assert type(data) == np.ndarray, f"Input data must be `np.ndarray` but it is {type(data)}"
-#     assert data.dtype == np.float32, f"Tensor shall have dtype np.float32, but has {data.dtype}"
-#     if check_first_dim:
-#         assert data.shape == (
-#             1, self.n_features), f"Incompatible shape: {data.shape}, expected {(1, self.n_features)}"
-#     else:
-#         assert data.shape[1] == self.n_features, f"Tensor shape mismatch: (x, {self.n_features}) -> {data.shape}"
+def validate_input_data(data: Any):
+    assert isinstance(data, np.ndarray), f"Input data must be `np.ndarray` but it is {type(data)}"
+    assert data.dtype == np.float32, f"Tensor shall have dtype np.float32, but has {data.dtype}"
 
 
 class EntityLinkerLocalImpl(EntityLinker):
     model_name = "multi-qa-mpnet-base-dot-v1"
+    memory_path = cwd / "entity_liner_memory.parquet"
 
     vector_index: faiss.IndexFlatIP | None = None
     number_of_dimensions = 0
@@ -44,17 +46,19 @@ class EntityLinkerLocalImpl(EntityLinker):
     contextual_embedder = None
 
     memory_columns = ["entity_qid", "span", "vector"]
+
     def __init__(
             self,
             k_neighbors: int = 4,
             cutoff_threshold: float = 0.95,
-            memory_path: Path = cwd / "entity_liner_memory.parquet",
+            memory_path: Path | None = None,
     ):
         self.k_neighbors = k_neighbors
         self.cutoff_threshold = cutoff_threshold
-        self.memory_path = memory_path
+        if memory_path is not None:
+            self.memory_path = memory_path
 
-    def initalize(self):
+    def initialize(self):
         logger.debug("Initializer contextual embedder")
         self.contextual_embedder = ContextualEmbedding(model_name=self.model_name)
 
@@ -77,7 +81,7 @@ class EntityLinkerLocalImpl(EntityLinker):
         tensor = np.vstack(dataframe.vectors)
         dataframe.drop(columns=["vector"], inplace=True)
 
-        # sticking the dataframes to the instanse
+        # sticking the dataframes to the instance
         self.index_dataframe = dataframe
         self.entity_groups = dataframe.groupby("entity_qid")
 
@@ -85,15 +89,17 @@ class EntityLinkerLocalImpl(EntityLinker):
         self.vector_index = faiss.IndexFlatIP(self.number_of_dimensions)
         self.vector_index.add(tensor)
 
-        logger.info(f"Index trained: {self.vector_index.is_trained}, number of vectors: {self.index.ntotal}")
+        logger.info(f"Index trained: {self.vector_index.is_trained}, number of vectors: {self.vector_index.ntotal}")
         logger.debug("EntityLinker initialized")
 
 
-    def find_closes_indices(self, vector) -> List[int]:
+    def find_closes_indices(self, vector) -> list[int]:
+        validate_input_data(vector)
         D, I = self.vector_index.search(vector, self.k_neighbors)
         return I[0].astype(int).tolist()
 
     def find_closes_indices_batch(self, tensor: np.ndarray) -> List[List[int]]:
+        validate_input_data(tensor)
         D, I = self.vector_index.search(tensor, self.k_neighbors)
         return I.astype(int).tolist()
 
@@ -120,9 +126,6 @@ class EntityLinkerLocalImpl(EntityLinker):
         entity_vectors_list = self.contextual_embedder.get_char_span_vectors(char_spans, preserve_embedding=False)
         tensor_of_entities: np.ndarray = np.vstack(entity_vectors_list).astype(np.float32)
         logger.debug(f"For provided entity spans, got following embedding matrix: {tensor_of_entities.shape}")
-
-
-
 
         # index search shall be in one operation cuz fast
         # I is (len(ents), k)
