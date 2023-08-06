@@ -8,8 +8,6 @@ from typing import Optional
 @dataclass(kw_only=True)
 class EntityData:
     qid: str
-    name: str
-    type: Optional[str]
 
 
 # class EntityModel(Base):
