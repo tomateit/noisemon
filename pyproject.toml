@@ -17,21 +17,16 @@ datasets = "^2.13.1"
 torch = "^2.0.1"
 spacy-alignments = "^0.9.0"
 sentence-transformers = "^2.2.2"
-
-[tool.poetry.group.dev]
-optional = true
-
-[tool.poetry.group.dev.dependencies]
 pytest = "^7.4.0"
 ipykernel = "^6.0.1"
 notebook = "^6.4.0"
 types-dateparser = "^1.0.8"
-jupyterlab = "^3.2.8"
 pandas = "^1.4.2"
 matplotlib = "^3.5.1"
 tqdm = "^4.64.1"
 typer = "^0.7.0"
 ruff = "^0.0.275"
+jupyterlab = "^4.0.4"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
@@ -41,7 +36,7 @@ python_files = "*_tests.py"
 [tool.ruff]
 include = ["*.py", "*.pyi", "**/pyproject.toml", "*.ipynb"]
 # Add "Q" to the list of enabled codes.
-select = ["E", "F", "Q"]
+select = ["E", "F", "Q", "B"]
 
 
 ignore = [

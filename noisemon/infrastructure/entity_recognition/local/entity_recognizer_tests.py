@@ -4,41 +4,82 @@ from noisemon.domain.services.entity_recognition.entity_recognizer import Entity
 from noisemon.infrastructure.entity_recognition.local.entity_recognizer import EntityRecognizerLocalImpl
 from noisemon.domain.models.entity_span import EntitySpan
 from noisemon.tools.metrics import calculate_partial_match_f1_score
+from noisemon.tools.similarity import similarity
+
 
 @pytest.fixture
 def entity_recognizer():
     return EntityRecognizerLocalImpl()
 
-def test_entity_recognition_partial_match_f1_score(entity_recognizer):
-    # Example 1: Input text and ground truth entities
-    input_text_1 = "Apple Inc. is a leading tech company. Microsoft Corporation is also well-known."
-    ground_truth_entities_1 = [
-        EntitySpan(span="Apple Inc.", span_start=0, span_end=9),
-        EntitySpan(span="Microsoft Corporation", span_start=44, span_end=63)
-    ]
-    predicted_entities_1 = entity_recognizer.recognize_entities(input_text_1)
 
-    # Example 2: Input text and ground truth entities
-    input_text_2 = "Amazon.com is an e-commerce giant. Google LLC is a tech company."
-    ground_truth_entities_2 = [
-        EntitySpan(span="Amazon.com", span_start=0, span_end=10),
-        EntitySpan(span="Google LLC", span_start=37, span_end=47)
-    ]
-    predicted_entities_2 = entity_recognizer.recognize_entities(input_text_2)
+test_data = [
+        pytest.param(
+            "Apple Inc. is a leading tech company.",
+            [
+                EntitySpan(span="Apple Inc.", span_start=0, span_end=10),
+            ],
+            id="Test: 1 entity"
+        ),
+        pytest.param(
+            "Apple Inc. is a leading tech company. Microsoft Corporation is also well-known.",
+            [
+                EntitySpan(span="Apple Inc.", span_start=0, span_end=10),
+                EntitySpan(span="Microsoft Corporation", span_start=38, span_end=59)
+            ],
+            id="Test: 2 entities"
+        ),
+        pytest.param(
+            "Amazon.com is an e-commerce giant. Google LLC is a tech company.",
+            [
+                EntitySpan(span="Amazon.com", span_start=0, span_end=10),
+                EntitySpan(span="Google LLC", span_start=35, span_end=45)
+            ],
+            id="Test: 2 entities"
+        )
+]
 
-    # Example 3: Add more test cases as needed
-    # ...
 
+
+@pytest.mark.parametrize(
+    "text, true_entities",
+    test_data
+)
+def test_entity_recognition_count(text: str, true_entities, entity_recognizer):
+    predicted_entities = entity_recognizer.recognize_entities(text)
+    assert len(true_entities) == len(predicted_entities)
+
+
+@pytest.mark.parametrize(
+    "text, true_entities",
+    test_data
+)
+def test_entity_partial_match(text: str, true_entities, entity_recognizer):
+    predicted_entities = entity_recognizer.recognize_entities(text)
+    threshold = 0.8
+    for true, pred in zip(true_entities, predicted_entities, strict=True):
+        assert threshold < similarity(true.span, [pred.span])
+
+
+@pytest.mark.parametrize(
+    "text, true_entities",
+    test_data
+)
+def test_entity_recognition_full_match(text: str, true_entities, entity_recognizer):
+    predicted_entities = entity_recognizer.recognize_entities(text)
+    assert true_entities == predicted_entities
+
+
+# def test_entity_recognition_partial_match_f1_score(text, true_entities, entity_recognizer):
+    # predicted_entities = entity_recognizer.recognize_entities(text)
+    # assert true_entities == predicted_entities
     # Calculate and assert Partial Match F1 Score for each example
-    partial_match_f1_score_1 = calculate_partial_match_f1_score(ground_truth_entities_1, predicted_entities_1)
-    partial_match_f1_score_2 = calculate_partial_match_f1_score(ground_truth_entities_2, predicted_entities_2)
-
-    assert partial_match_f1_score_1 > 0.95
-    assert partial_match_f1_score_2 > 0.95
+    # partial_match_f1_score_1 = calculate_partial_match_f1_score(ground_truth_entities_1, predicted_entities_1)
+    # partial_match_f1_score_2 = calculate_partial_match_f1_score(ground_truth_entities_2, predicted_entities_2)
 
 
 def test_class_initialization(entity_recognizer: EntityRecognizer):
     assert entity_recognizer is not None
+
 
 def test_er_returns_non_empty_list(entity_recognizer: EntityRecognizer):
     sample = "Microsoft is a company."
