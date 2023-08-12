@@ -4,7 +4,7 @@ from noisemon.domain.models.entity_span import EntitySpan
 
 
 class EntityLinker(metaclass=ABCMeta):
-    def link_entities(self, text: str, recognized_entities: list[EntitySpan]) -> list[EntityData]:
+    def link_entities(self, text: str, recognized_entities: list[EntitySpan]) -> list[EntityData | None]:
         ...
 
 
