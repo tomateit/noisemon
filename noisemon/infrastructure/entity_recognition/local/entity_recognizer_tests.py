@@ -69,6 +69,16 @@ def test_entity_recognition_full_match(text: str, true_entities, entity_recogniz
     assert true_entities == predicted_entities
 
 
+@pytest.mark.parametrize(
+    "text, true_entities",
+    test_data
+)
+def test_entity_recognition_span_index_consistency(text: str, true_entities, entity_recognizer):
+    predicted_entities = entity_recognizer.recognize_entities(text)
+    for p in predicted_entities:
+        assert p.span == text[p.span_start:p.span_end]
+
+
 # def test_entity_recognition_partial_match_f1_score(text, true_entities, entity_recognizer):
     # predicted_entities = entity_recognizer.recognize_entities(text)
     # assert true_entities == predicted_entities
