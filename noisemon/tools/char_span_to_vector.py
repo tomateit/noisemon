@@ -32,8 +32,10 @@ class ContextualEmbedding:
         wordpieces = self.tokenizer.batch_decode(encoded_text.input_ids[0])
         embedding_alignment, _ = tokenizations.get_alignments(list(text), wordpieces)
         self.embedding_alignment = embedding_alignment
+
         with torch.no_grad():
             model_output = self.model(**{k: v.to(self.model.device) for k, v in encoded_text.items()})
+
         embeddings = model_output.last_hidden_state.cpu()
         self.embedding = torch.nn.functional.normalize(embeddings).squeeze()
 
@@ -43,7 +45,10 @@ class ContextualEmbedding:
         If preserve_embedding is false, the precalculated embeddings will be removed
         Normally, the result list length equals  `char_spans` list length
         """
-        assert self.embedding is not None, "Please, run `embed_text` at first. I have to cache an embedding internally"
+
+        if self.embedding is None:
+            raise Exception("Please, run `embed_text` at first. I have to cache an embedding internally")
+
         span_vectors = []
         for span in char_spans:
             span_idxs = [idx

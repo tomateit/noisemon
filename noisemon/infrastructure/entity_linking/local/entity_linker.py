@@ -36,7 +36,7 @@ def validate_input_data(data: Any):
 
 
 class EntityLinkerLocalImpl(EntityLinker):
-    model_name = "multi-qa-mpnet-base-dot-v1"
+    model_name = "sentence-transformers/multi-qa-mpnet-base-dot-v1"
     memory_path = cwd / "entity_liner_memory.parquet"
 
     vector_index: faiss.IndexFlatIP | None = None
