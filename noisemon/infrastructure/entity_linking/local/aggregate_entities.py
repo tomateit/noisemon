@@ -27,7 +27,7 @@ def main(text_dataframe_path: Path, mentions_dataframe_path: Path, memory_path: 
         for idx, mention_row in mentions_subframe.iterrows():
             span_pair = (mention_row.span_start, mention_row.span_end)
             vectors = encoder.get_char_span_vectors([span_pair], preserve_embedding=True)
-            vector = vectors[0]
+            vector = vectors[0].numpy()
             mention = MemoryData(
                 vector=vector,
                 entity_qid=mention_row.entity_qid,

@@ -34,9 +34,11 @@ class Processor:
 
 
 if __name__ == "__main__":
+    entity_linker = EntityLinkerLocalImpl()
+    entity_linker.initialize()
     processor = Processor(
         entity_recognizer=EntityRecognizerLocalImpl(),
-        entity_linker=EntityLinkerLocalImpl(),
+        entity_linker=entity_linker,
     )
 
     def main(text: str):

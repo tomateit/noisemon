@@ -22,7 +22,7 @@ from noisemon.tools.similarity import similarity
 from noisemon.domain.services.entity_linking.entity_linker import EntityLinker
 
 
-cwd = Path(__file__).resolve()
+cwd = Path(__file__).resolve().parent
 
 @dataclass
 class MemoryData:
@@ -37,7 +37,7 @@ def validate_input_data(data: Any):
 
 class EntityLinkerLocalImpl(EntityLinker):
     model_name = "sentence-transformers/multi-qa-mpnet-base-dot-v1"
-    memory_path = cwd / "entity_liner_memory.parquet"
+    memory_path = cwd / "entity_linker_memory.parquet"
 
     vector_index: faiss.IndexFlatIP | None = None
     number_of_dimensions = 0
@@ -60,7 +60,7 @@ class EntityLinkerLocalImpl(EntityLinker):
 
     def initialize(self):
         logger.debug("Initializer contextual embedder")
-        self.contextual_embedder = ContextualEmbedding(model_name=self.model_name)
+        self.contextual_embedder = ContextualEmbedding(model_name=self.model_name, device=torch.device("cuda:0"))
 
         logger.debug("Vector loading has been launched")
         dataframe = pd.read_parquet(self.memory_path, columns=self.memory_columns)
@@ -78,7 +78,7 @@ class EntityLinkerLocalImpl(EntityLinker):
         dataframe.reset_index(drop=True, inplace=True)
 
         # separating the vectors
-        tensor = np.vstack(dataframe.vectors)
+        tensor = np.vstack(dataframe["vector"])
         dataframe.drop(columns=["vector"], inplace=True)
 
         # sticking the dataframes to the instance
@@ -109,7 +109,7 @@ class EntityLinkerLocalImpl(EntityLinker):
         return EntityData(qid=entity_qid)
 
     def get_entity_aliases(self, entity: EntityData) -> list[str]:
-        return self.entity_groups.get_group(entity.qid)
+        return self.entity_groups.get_group(entity.qid)["span"].unique().tolist()
 
     def link_entities(self, text: str, recognized_entities: list[EntitySpan]) -> list[EntityData]:
         """
@@ -133,28 +133,34 @@ class EntityLinkerLocalImpl(EntityLinker):
         list_of_candidate_lists: List[List[Optional[MentionData]]] = flat_map(self.get_entity_by_vector_index, I)
 
         # 3. Strategy: choosing majority
-        for recognized_entity, candidate_list in zip(recognized_entities, list_of_candidate_lists):
+        for recognized_entity, candidate_list in zip(recognized_entities, list_of_candidate_lists, strict=True):
             if not any(candidate_list):  # all candidates may be none, we ask for at least one
                 linked_entities.append(None)
                 logger.debug(f"Entity {recognized_entity} has no matching candidates")
                 continue
 
-            previously_known_mention, count = get_majority_by(candidate_list, "entity_qid")
+            previously_known_mention, count = get_majority_by(candidate_list, "qid")
             # even if each entity appears 1 time this will be leftmost thus closest
-            major_entity: EntityData = previously_known_mention.entity
-            logger.debug(f"Vector of entity {recognized_entity} is close to the vectors of {major_entity.name}")
+            major_entity: EntityData = previously_known_mention
+            logger.debug(f"Vector of entity {recognized_entity} is close to the vectors of {major_entity.qid}")
+
+            # SKIP LEXICOGRAPHICAL CHECK
+            linked_entities.append(major_entity)
+            continue
+
             # We can not just return any QID we got from vector query.
             # If the entity is completely unknown there still will be a result
             # Thus check span to be alike one of QID aliases
-            aliases = self.get_entity_aliases(major_entity)
+            aliases = self.get_entity_aliases(major_entity.qid)
+
             if similarity(recognized_entity.span, aliases) < self.cutoff_threshold:
                 # fail case
                 linked_entities.append(None)
-                logger.debug(f"FAIL >> Entity {recognized_entity} failed similarity test with {major_entity.name} aliases")
+                logger.debug(f"FAIL >> Entity {recognized_entity} failed similarity test with {major_entity.qid} aliases")
             else:
                 # success case
                 linked_entities.append(major_entity)
-                logger.debug(f"SUCC >> Entity recognized as one of {major_entity.name} aliases {aliases} ")
+                logger.debug(f"SUCC >> Entity recognized as one of {major_entity.qid} aliases {aliases} ")
 
         return linked_entities
 
