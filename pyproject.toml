@@ -28,6 +28,7 @@ ruff = "^0.0.275"
 jupyterlab = "^4.0.4"
 pyarrow = "^13.0.0"
 pandas = "^2.1.0"
+lxml = "^4.9.3"
 
 [tool.pytest.ini_options]
 minversion = "7.0"
