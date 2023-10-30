@@ -1,5 +1,5 @@
-# NOISEMON (0.4)
-## NER + NEL pipeline
+# NOISEMON (0.5)
+## Reactive Entity Linking Pipeline
 The core of this app is adaptive mechanism of Vector Index-based entity linking.
 
 ### Subtasks
@@ -8,7 +8,6 @@ The core of this app is adaptive mechanism of Vector Index-based entity linking.
 
 
 ### What the app currently does:
-0. Now it is basically an entity linker
 1. It listens to the stream of text messages
 2. Performs spaCy-based text processing for NER:
     - The custom transformer+ner pipeline is used to extract named entities

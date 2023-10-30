@@ -23,28 +23,3 @@ class DocumentData:
     id: Optional[str] = None
 
 
-# class DocumentModel(Base):
-#     __tablename__ = "documents"
-#     id = Column(String, name="id", primary_key=True, default=generate_uuid)
-#     origin = Column(JSONB, name="origin")
-#
-#     text = Column(String, nullable=False)
-#     raw_text = Column(String, nullable=False)
-#
-#     mentions = relationship("MentionModel", back_populates="origin")
-
-
-# def model_to_dataclass(o: DocumentModel) -> DocumentData:
-#     return DocumentData(
-#         id=o.id,
-#         origin=DocumentOrigin(**o.origin),
-#         text=o.text,
-#         raw_text=o.raw_text,
-#     )
-
-# def dataclass_to_model(o: DocumentData):
-#     return DocumentModel(
-#         origin=asdict(o.origin),
-#         text=o.text,
-#         raw_text=o.raw_text,
-#     )

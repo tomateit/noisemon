@@ -1,5 +1,6 @@
 import typer
 
+from noisemon.domain.services.repository.repository import Repository
 from noisemon.logger import logger
 from noisemon.domain.models.entity import EntityData
 from noisemon.domain.models.entity_span import EntitySpan
@@ -16,6 +17,7 @@ class Processor:
             self,
             entity_recognizer: EntityRecognizer,
             entity_linker: EntityLinker,
+            repository: Repository,
         ):
         self.entity_recognizer = entity_recognizer
         self.entity_linker = entity_linker
