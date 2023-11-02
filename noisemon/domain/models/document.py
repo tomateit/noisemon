@@ -1,12 +1,6 @@
 from dataclasses import dataclass
 from typing import Optional
 
-
-#
-# def generate_uuid():
-#     return str(uuid.uuid4())
-
-
 # @dataclass(kw_only=True)
 # class DocumentOrigin:
 #     from_process: Literal["news_stream", "kb_population"]
@@ -18,8 +12,13 @@ from typing import Optional
 @dataclass(kw_only=True)
 class DocumentData:
     # origin: DocumentOrigin
-    text: str   # content as text
-    raw_text: str  # content in raw form, probably with platform-specific markup
-    id: Optional[str] = None
+    document_id: str | None = None
+    raw_content: str | None = None # original document data
+    content: str | None = None # processed document data
+    raw_text: str | None = None # unprocessed extracted text, probably with platform-specific markup
+    text: str | None = None   # content as processed text
 
 
+@dataclass(kw_only=True)
+class PersistedDocumentData(DocumentData):
+    document_id: str

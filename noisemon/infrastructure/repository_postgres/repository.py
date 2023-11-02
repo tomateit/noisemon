@@ -1,9 +1,78 @@
+import sqlalchemy
+from sqlalchemy import create_engine, select, distinct
+from sqlalchemy.orm import sessionmaker
+
 from noisemon.domain.services.repository.repository import Repository
+from noisemon.infrastructure.repository_postgres.database_models import EntityModel
+from .database_models import *
+from ...domain.models.mention import PersistedMentionData, MentionData
 
 
 class RepositoryPostgresImpl(Repository):
-    def __init__(self, connection_string: str):
+    def __init__(self, database_uri):
+        self.engine = create_engine(database_uri)
+        Session = sessionmaker(bind=self.engine)
+        self.session = Session()
 
+    def get_entity_by_qid(self, entity_qid: str) -> EntityData | None:
+        entity = self.session.get(EntityModel, entity_qid)
+        if entity is not None:
+            entity = entity_model_to_dataclass(entity)
+        return entity
+
+    def get_document_by_id(self, document_id: str) -> PersistedDocumentData | None:
+        document = self.session.get(DocumentModel, document_id)
+        if document is not None:
+            document = document_model_to_dataclass(document)
+        return document
+
+    def get_mention_by_id(self, mention_id: str) -> PersistedMentionData | None:
+        mention = self.session.get(MentionModel, mention_id)
+        if mention is not None:
+            mention = mention_model_to_dataclass(mention)
+        return mention
+
+
+    def get_similar_mentions(self, mention: MentionData, max_mentions: int = 20) -> list[PersistedMentionData]:
+        statement = (
+            select(MentionModel)
+            .order_by(MentionModel.vector.max_inner_product(mention.vector))
+            .limit(max_mentions)
+        )
+        with self.session.begin_nested():
+            mentions = self.session.scalars(statement).all()
+        mentions = [mention_model_to_dataclass(m) for m in mentions]
+        return mentions
+
+    def get_entity_aliases_by_qid(self, qid: EntityQID) -> list[str]:
+        statement = select(distinct(MentionModel.span)).filter_by(entity_qid=qid)
+        results = self.session.scalars(statement).all()
+        results = [str(r) for r in results] # does not seem necessary
+        return results
+
+
+    def persist_new_document(self, document: DocumentData) -> PersistedDocumentData:
+        new_document_model = document_dataclass_to_model(document)
+        with self.session.begin_nested():
+            self.session.add(new_document_model)
+        self.session.commit()
+        result = document_model_to_dataclass(new_document_model)
+        return result
+
+    def persist_new_mention(self, mention: MentionData, document: PersistedDocumentData) -> PersistedMentionData:
+        assert document.document_id is not None, "Only persisted documents are acceptable"
+        if mention.document_id != document.document_id:
+            raise ValueError("Document ID do not match")
+
+        if mention.document_id is None:
+            mention.document_id = document.document_id
+
+        new_mention = mention_dataclass_to_model(mention)
+        with self.session.begin_nested():
+            self.session.add(new_mention)
+        self.session.commit()
+        result = mention_dataclass_to_model(new_mention)
+        return result
 
 # def get_all_active_vectors(db: Session) -> Optional[np.ndarray]:
 #     """
@@ -54,13 +123,6 @@ class RepositoryPostgresImpl(Repository):
 #     db.commit()
 #     return result
 
-
-# def get_by_qid(db: Session, qid: str) -> Optional[EntityModel]:
-#     query = (select(EntityModel).filter_by(qid=qid))
-#     result = db.execute(query).scalars().first()
-#     return result
-
-
 # def get_insert_statement(entity: EntityModel):
 #     data = model_to_dict(entity)
 #     return insert(EntityModel.__table__).values(**data).on_conflict_do_nothing(index_elements=["qid"])
@@ -80,6 +142,3 @@ class RepositoryPostgresImpl(Repository):
 #         db.add(entity)
 #     return entity
 #
-#
-# def get_entities(db: Session, skip: int = 0, limit: int = 100) -> List[EntityModel]:
-#     return db.query(EntityModel).offset(skip).limit(limit).all()

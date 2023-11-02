@@ -1,8 +1,8 @@
 import pytest
-from noisemon.infrastructure.entity_linking.local.entity_linker import EntityLinkerLocalImpl, EntitySpan, EntityData
+from noisemon.infrastructure.entity_linking.local.entity_linker import EntityLinkerImpl, EntitySpan, EntityData
 
 # Initialize the EntityLinker for testing
-entity_linker = EntityLinkerLocalImpl()
+entity_linker = EntityLinkerImpl()
 entity_linker.initialize()
 # Test cases
 @pytest.mark.parametrize(

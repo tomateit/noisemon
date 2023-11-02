@@ -6,12 +6,12 @@ from tqdm import tqdm
 from sklearn.metrics import balanced_accuracy_score
 
 from noisemon.domain.models.entity_span import EntitySpan
-from noisemon.infrastructure.entity_linking.local.entity_linker import EntityLinkerLocalImpl
+from noisemon.infrastructure.entity_linking.local.entity_linker import EntityLinkerImpl
 
 
 def evaluate_entity_linking(test_data_dir: Path, whitelist_path: Path):
     shared_entities = set(pd.read_parquet(whitelist_path)["qid"].values)
-    entity_linker = EntityLinkerLocalImpl()
+    entity_linker = EntityLinkerImpl()
     entity_linker.initialize()
 
     mentions_df = pd.read_parquet(test_data_dir / "mentions.parquet")

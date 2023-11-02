@@ -1,10 +1,12 @@
 from abc import ABCMeta
+
+from noisemon.domain.models.document import DocumentData
 from noisemon.domain.models.entity import EntityData
-from noisemon.domain.models.entity_span import EntitySpan
+from noisemon.domain.models.mention import MentionData
 
 
 class EntityLinker(metaclass=ABCMeta):
-    def link_entities(self, text: str, recognized_entities: list[EntitySpan]) -> list[EntityData | None]:
+    def link_entities(self, recognized_entities: list[MentionData], document: DocumentData) -> list[EntityData | None]:
         ...
 
 
