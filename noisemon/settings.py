@@ -1,7 +1,8 @@
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
+    TIMEZONE: str = "UTC"
     ENVIRONMENT: str = "development"
     DATABASE_URI: str
 

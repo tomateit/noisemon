@@ -1,5 +1,6 @@
 import sqlalchemy
 from sqlalchemy import create_engine, select, distinct
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from noisemon.domain.services.repository.repository import Repository
@@ -14,7 +15,7 @@ class RepositoryPostgresImpl(Repository):
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
-    def get_entity_by_qid(self, entity_qid: str) -> EntityData | None:
+    def get_entity_by_qid(self, entity_qid: EntityQID) -> EntityData | None:
         entity = self.session.get(EntityModel, entity_qid)
         if entity is not None:
             entity = entity_model_to_dataclass(entity)
@@ -53,9 +54,17 @@ class RepositoryPostgresImpl(Repository):
 
     def persist_new_document(self, document: DocumentData) -> PersistedDocumentData:
         new_document_model = document_dataclass_to_model(document)
-        with self.session.begin_nested():
-            self.session.add(new_document_model)
-        self.session.commit()
+
+        try:
+            with self.session.begin_nested():
+                self.session.add(new_document_model)
+            self.session.commit()
+        except IntegrityError:
+            self.session.rollback()
+            # we can safely ignore primary key violation if it is externally generated
+            if document.document_id is None:
+                raise
+
         result = document_model_to_dataclass(new_document_model)
         return result
 
@@ -73,6 +82,26 @@ class RepositoryPostgresImpl(Repository):
         self.session.commit()
         result = mention_dataclass_to_model(new_mention)
         return result
+
+    def get_mentions_by_document_id(self, document_id: str) -> list[PersistedMentionData]:
+        statement = select(MentionModel).filter_by(document_id=document_id)
+        response = self.session.scalars(statement)
+        result = [mention_model_to_dataclass(m) for m in response]
+        return result
+
+    def persist_new_entity(self, entity: EntityData) -> EntityData:
+        new_entity = entity_dataclass_to_model(entity)
+
+        try:
+            with self.session.begin_nested():
+                self.session.merge(new_entity)
+            self.session.commit()
+        except IntegrityError:
+            self.session.rollback()
+
+        return entity
+
+
 
 # def get_all_active_vectors(db: Session) -> Optional[np.ndarray]:
 #     """

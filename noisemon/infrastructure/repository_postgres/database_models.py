@@ -70,9 +70,14 @@ class EntityModel(Base):
         return set([x.span for x in self.mentions])
 
 
+def entity_model_to_dataclass(o) -> EntityData:
+    return EntityData(
+        entity_qid=EntityQID(o.entity_qid)
+    )
+
 def entity_dataclass_to_model(o: EntityData) -> EntityModel:
     return EntityModel(
-        entity_qid=o.entity_qid,
+        entity_qid=str(o.entity_qid),
         # name=o.name,
     )
 
@@ -99,20 +104,13 @@ def document_dataclass_to_model(o: DocumentData) -> DocumentModel:
 
 def entity_dataclass_to_dict(o: EntityData) -> dict:
     return dict(
-        entity_qid=o.entity_qid,
+        entity_qid=str(o.entity_qid),
         # name=o.name,
     )
 
 
 def entity_model_to_dict(o: EntityModel) -> dict:
     return dict(
-        qid=o.qid,
-        name=o.name,
-        type=o.type
-    )
-
-def entity_model_to_dataclass(o: EntityModel) -> EntityData:
-    return EntityData(
         entity_qid=o.entity_qid,
     )
 
@@ -123,7 +121,7 @@ def mention_model_to_dataclass(o) -> PersistedMentionData:
         span_end=o.span_end,
         document_id=o.document_id,
         mention_id=o.mention_id,
-        entity_qid=o.entity_qid,
+        entity_qid=EntityQID(o.entity_qid),
         vector=o.vector,
     )
 
@@ -134,6 +132,6 @@ def mention_dataclass_to_model(o) -> MentionModel:
         span_end=o.span_end,
         document_id=o.document_id,
         mention_id=o.mention_id,
-        entity_qid=o.entity_qid,
+        entity_qid=str(o.entity_qid),
         vector=o.vector,
     )

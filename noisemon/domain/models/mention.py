@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from noisemon.domain.models.entity_span import EntitySpan
+from noisemon.domain.models.qid import EntityQID
 
 
 @dataclass(kw_only=True)
@@ -11,7 +12,7 @@ class MentionData(EntitySpan):
 
     document_id: str | None = None
     mention_id: str | None = None
-    entity_qid: str | None = None
+    entity_qid: EntityQID | None = None
 
     vector: list[float] | None = None
 

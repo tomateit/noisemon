@@ -31,11 +31,14 @@ class Repository(metaclass=ABCMeta):
     def get_similar_mentions(self, mention: MentionData, max_mentions: int = 20) -> list[PersistedMentionData]:
         ...
 
-
     @abstractmethod
     def persist_new_document(self, document: DocumentData) -> PersistedDocumentData:
         ...
 
     @abstractmethod
     def persist_new_mention(self, mention: MentionData, document: PersistedDocumentData) -> PersistedMentionData:
+        ...
+
+    @abstractmethod
+    def persist_new_entity(self, entity: EntityData) -> EntityData:
         ...
