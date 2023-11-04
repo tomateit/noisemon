@@ -7,7 +7,7 @@ from noisemon.domain.services.language_representation.contextual_embedder import
 
 
 class ContextualEmbedderLocalImpl(ContextualEmbedder):
-    model_name = "BAAI/bge-large-en-v1.5"
+    model_name = "intfloat/multilingual-e5-large"
     def __init__(
             self,
             model_name=None,
@@ -37,8 +37,8 @@ class ContextualEmbedderLocalImpl(ContextualEmbedder):
         with torch.no_grad():
             model_output = self.model(**{k: v.to(self.model.device) for k, v in encoded_text.items()})
 
-        embeddings = model_output.last_hidden_state.cpu()
-        embedding = torch.nn.functional.normalize(embeddings).squeeze()
+        embeddings = model_output.last_hidden_state.cpu() # (1, 512, 1024)
+        embedding = embeddings.squeeze() # (512, 1024)
 
         span_vectors = []
         for span in char_spans:
@@ -46,8 +46,9 @@ class ContextualEmbedderLocalImpl(ContextualEmbedder):
                          for list_of_indices in embedding_alignment[span.span_start: span.span_end]
                          for idx in list_of_indices]
             span_idxs = sorted(set(span_idxs))
-            span_emb = embedding[span_idxs]
-            span_vector = torch.mean(span_emb, dim=0)
+            span_emb = embedding[span_idxs] # (x, 1024)
+            span_vector = torch.mean(span_emb, dim=0) # [1024]
+            span_vector = torch.nn.functional.normalize(span_vector, dim=0)
             span_vectors.append(span_vector)
 
         return span_vectors

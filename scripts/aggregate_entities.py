@@ -58,7 +58,14 @@ def main(text_dataframe_path: Path, mentions_dataframe_path: Path):
 
         vectors = encoder.get_char_span_vectors(text, mentions)
         for mention, vector in zip(mentions, vectors, strict=True):
+            # some of the spans could be truncated
+            # their vector will contain nans
+            if torch.isnan(vector).any():
+                continue
+
             mention.vector = vector.tolist()
+
+        mentions = [m for m in mentions if m.vector is not None]
 
         for mention in mentions:
             repository.persist_new_mention(mention, document)
