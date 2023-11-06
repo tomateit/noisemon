@@ -1,7 +1,6 @@
 from pathlib import Path
-from typing import List, Union,Any
+from typing import List, Union
 
-import numpy as np
 
 
 from noisemon.domain.models.document import DocumentData
@@ -12,10 +11,6 @@ from noisemon.domain.models.mention import MentionData
 from noisemon.tools.tools import get_majority_by
 from noisemon.tools.similarity import similarity
 from noisemon.domain.services.entity_linking.entity_linker import EntityLinker
-
-
-
-
 
 
 class EntityLinkerImpl(EntityLinker):

@@ -1,12 +1,23 @@
-import sqlalchemy
 from sqlalchemy import create_engine, select, distinct
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from noisemon.domain.services.repository.repository import Repository
-from noisemon.infrastructure.repository_postgres.database_models import EntityModel
-from .database_models import *
-from ...domain.models.mention import PersistedMentionData, MentionData
+from noisemon.domain.models.entity import EntityData
+from noisemon.domain.models.mention import MentionData, PersistedMentionData
+from noisemon.domain.models.document import DocumentData, PersistedDocumentData
+from noisemon.domain.models.qid import EntityQID
+from .database_models import (
+    EntityModel,
+    MentionModel,
+    DocumentModel,
+    entity_model_to_dataclass,
+    entity_dataclass_to_model,
+    mention_model_to_dataclass,
+    mention_dataclass_to_model,
+    document_model_to_dataclass,
+    document_dataclass_to_model,
+)
 
 
 class RepositoryPostgresImpl(Repository):

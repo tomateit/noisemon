@@ -1,9 +1,7 @@
 import uuid
-from datetime import datetime
 
-import sqlalchemy
 from sqlalchemy import Column, ForeignKey
-from sqlalchemy.dialects.postgresql import JSONB, TEXT, TIMESTAMP, INTEGER
+from sqlalchemy.dialects.postgresql import TEXT
 from sqlalchemy.orm import declarative_base, relationship
 from pgvector.sqlalchemy import Vector
 

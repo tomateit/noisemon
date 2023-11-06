@@ -3,7 +3,6 @@ import pytest
 from noisemon.domain.services.entity_recognition.entity_recognizer import EntityRecognizer
 from noisemon.infrastructure.entity_recognition.local.entity_recognizer import EntityRecognizerLocalImpl
 from noisemon.domain.models.entity_span import EntitySpan
-from noisemon.tools.metrics import calculate_partial_match_f1_score
 from noisemon.tools.similarity import similarity
 
 

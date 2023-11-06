@@ -13,8 +13,11 @@ class ContextualEmbedderLocalImpl(ContextualEmbedder):
             model_name=None,
             model=None,
             tokenizer=None,
-            device=torch.device("cpu")
+            device=None,
     ):
+        if device is None:
+            device = torch.device("cpu")
+
         if model_name is not None:
             self.model_name = model_name
 
