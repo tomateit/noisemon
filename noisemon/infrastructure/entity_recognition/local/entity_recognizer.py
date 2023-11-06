@@ -73,7 +73,7 @@ def strip_whitespaces(datum: HFEntity, text: str) -> HFEntity:
 
 
 class EntityRecognizerLocalImpl(EntityRecognizer):
-    def __init__(self):
+    def __init__(self, device):
         model_name = "philschmid/distilroberta-base-ner-conll2003"
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.model = AutoModelForTokenClassification.from_pretrained(model_name)
@@ -81,7 +81,8 @@ class EntityRecognizerLocalImpl(EntityRecognizer):
             "ner",
             model=self.model,
             tokenizer=self.tokenizer,
-            aggregation_strategy="simple"
+            aggregation_strategy="simple",
+            device=device
         )
 
     def recognize_entities(self, text):

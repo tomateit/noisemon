@@ -47,7 +47,7 @@ class EntityLinkerImpl(EntityLinker):
         aliases = self.repository.get_entity_aliases_by_qid(major_entity.entity_qid)
 
         if similarity(mention.span, aliases) < self.cutoff_threshold:
-            logger.debug(f"FAIL >> Entity {mention} failed similarity test with {major_entity.entity_qid} aliases")
+            logger.debug(f"FAIL >> Entity {mention} failed similarity test with {major_entity.entity_qid} aliases: {aliases}")
             return None
         else:
             # success case

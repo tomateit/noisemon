@@ -16,7 +16,8 @@ class RepositoryPostgresImpl(Repository):
         self.session = Session()
 
     def get_entity_by_qid(self, entity_qid: EntityQID) -> EntityData | None:
-        entity = self.session.get(EntityModel, entity_qid)
+        entity_qid_str = str(entity_qid)
+        entity = self.session.get(EntityModel, entity_qid_str)
         if entity is not None:
             entity = entity_model_to_dataclass(entity)
         return entity
@@ -46,7 +47,8 @@ class RepositoryPostgresImpl(Repository):
         return mentions
 
     def get_entity_aliases_by_qid(self, qid: EntityQID) -> list[str]:
-        statement = select(distinct(MentionModel.span)).filter_by(entity_qid=qid)
+        entity_qid_str = str(qid)
+        statement = select(distinct(MentionModel.span)).filter_by(entity_qid=entity_qid_str)
         results = self.session.scalars(statement).all()
         results = [str(r) for r in results] # does not seem necessary
         return results

@@ -57,19 +57,19 @@ class Processor:
         # 2. Entity Linking
         linked_entities: list[EntityData, None] = self.entity_linker.link_entities(mentions, document)
 
-        for recognized_entity, lined_entity in zip(recognized_entities, linked_entities, strict=True):
-            print(f"Entity: {recognized_entity.span} | {lined_entity.qid}")
+        for recognized_entity, linked_entity in zip(recognized_entities, linked_entities, strict=True):
+            print(f"Entity: {recognized_entity.span} | {linked_entity and linked_entity.entity_qid}")
 
         print("---------")
 
 
 if __name__ == "__main__":
+    contextual_embedder = ContextualEmbedderLocalImpl(device=torch.device("cpu"))
+    entity_recognizer=EntityRecognizerLocalImpl(device=torch.device("cpu"))
     repository = RepositoryPostgresImpl(settings.DATABASE_URI)
-    entity_recognizer=EntityRecognizerLocalImpl()
     entity_linker = EntityLinkerImpl(
         repository=repository
     )
-    contextual_embedder = ContextualEmbedderLocalImpl(device=torch.device("gpu"))
     processor = Processor(
         entity_recognizer=entity_recognizer,
         entity_linker=entity_linker,
