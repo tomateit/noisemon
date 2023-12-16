@@ -14,8 +14,9 @@
 *.pickle
 *.binary
 *.json
-*.txt
 *.log
+*.parquet
+*.xlsx
 
 __pycache__/
 .ipynb_checkpoints/
