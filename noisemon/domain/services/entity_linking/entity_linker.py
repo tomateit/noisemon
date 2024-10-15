@@ -7,9 +7,6 @@ from noisemon.domain.models.mention import MentionData
 
 class EntityLinker(metaclass=ABCMeta):
     @abstractmethod
-    def link_entities(self, recognized_entities: list[MentionData], document: DocumentData) -> list[EntityData | None]:
-        ...
-
-
-
-
+    def link_entities(
+        self, recognized_entities: list[MentionData], document: DocumentData
+    ) -> list[EntityData | None]: ...

@@ -4,6 +4,7 @@
 .env
 .env.docker
 .deeppavlov_env
+.ruff_cache
 
 *.pyc
 *.txt

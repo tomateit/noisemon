@@ -30,15 +30,23 @@ def evaluate_entity_linking(test_data_dir: Path, whitelist_path: Path):
     for _, row in tqdm(texts_df.iterrows(), total=len(texts_df)):
         mentions_group = mention_groups.get_group(row.text_id)
         mentions_group = mentions_group.to_dict(orient="records")
-        mentions_group = [m for m in mentions_group if m["entity_qid"] in shared_entities]
-        if not mentions_group: continue
+        mentions_group = [
+            m for m in mentions_group if m["entity_qid"] in shared_entities
+        ]
+        if not mentions_group:
+            continue
 
-        mentions: list[EntitySpan] = [EntitySpan(span_start=m["span_start"], span_end=m["span_end"], span=m["span"]) for m in mentions_group]
+        mentions: list[EntitySpan] = [
+            EntitySpan(
+                span_start=m["span_start"], span_end=m["span_end"], span=m["span"]
+            )
+            for m in mentions_group
+        ]
         true_entities_str: list[str] = [m["entity_qid"] for m in mentions_group]
         raise NotImplementedError
 
         linked_entities = entity_linker.link_entities(row.original_text, mentions)
-        linked_entities_str = [e.entity_qid if e else "NONE" for e in linked_entities ]
+        linked_entities_str = [e.entity_qid if e else "NONE" for e in linked_entities]
 
         true_buffer.extend(true_entities_str)
         predicted_buffer.extend(linked_entities_str)
@@ -46,14 +54,11 @@ def evaluate_entity_linking(test_data_dir: Path, whitelist_path: Path):
     baccuracy = balanced_accuracy_score(true_buffer, predicted_buffer)
     print(f"Balanced Accuracy with no adjustment (just weighted): {baccuracy}")
 
-    baccuracy_adj = balanced_accuracy_score(true_buffer, predicted_buffer, adjusted=True)
+    baccuracy_adj = balanced_accuracy_score(
+        true_buffer, predicted_buffer, adjusted=True
+    )
     print(f"Balanced Accuracy with adjustment (random=0, perfect=1): {baccuracy_adj}")
 
 
-
 if __name__ == "__main__":
-
     typer.run(evaluate_entity_linking)
-
-
-

@@ -1,3 +1,4 @@
+import uuid
 from dataclasses import dataclass
 
 from noisemon.domain.models.entity_span import EntitySpan
@@ -10,13 +11,14 @@ class MentionData(EntitySpan):
     span_start: str
     span_end: str
 
-    document_id: str | None = None
-    mention_id: str | None = None
+    document_id: uuid.UUID | None = None
+    mention_id: uuid.UUID | None = None
     entity_qid: EntityQID | None = None
 
     vector: list[float] | None = None
 
+
 @dataclass(kw_only=True)
 class PersistedMentionData(MentionData):
-    document_id: str
-    mention_id: str
+    document_id: uuid.UUID
+    mention_id: uuid.UUID

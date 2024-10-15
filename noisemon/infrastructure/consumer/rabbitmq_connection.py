@@ -25,14 +25,8 @@ connection = pika.BlockingConnection(connection_parameters)
 logger.info("RabbitMQ connection created successfully")
 
 channel = connection.channel()
-channel.exchange_declare(
-    exchange=settings.RABBITMQ_EXCHANGE,
-    exchange_type="direct"
-)
-queue_in = channel.queue_declare(
-    queue=settings.RABBITMQ_SOURCE_QUEUE,
-    durable=True
-)
+channel.exchange_declare(exchange=settings.RABBITMQ_EXCHANGE, exchange_type="direct")
+queue_in = channel.queue_declare(queue=settings.RABBITMQ_SOURCE_QUEUE, durable=True)
 channel.queue_bind(
     exchange=settings.RABBITMQ_EXCHANGE,
     queue=queue_in.method.queue,
@@ -44,12 +38,11 @@ logger.info("RabbitMQ channel created successfully")
 def main():
     myprocessor = Processor()
 
-    while (True):
+    while True:
         if channel.is_closed:
             channel.open()
         method_frame, header_frame, body = channel.basic_get(
-            queue=settings.RABBITMQ_SOURCE_QUEUE, 
-            auto_ack=False
+            queue=settings.RABBITMQ_SOURCE_QUEUE, auto_ack=False
         )
         if method_frame:
             delivery_tag = method_frame.delivery_tag

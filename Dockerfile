@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM python:3.12
 
 ENV ENVIRONMENT=production
 
@@ -10,14 +10,7 @@ RUN curl -sSL https://install.python-poetry.org | python3 -
 
 RUN poetry config virtualenvs.create false
 
-COPY poetry.lock pyproject.toml /code/
+COPY ./ ./
 
 RUN poetry install
 
-COPY ./ /code/
-
-RUN /code/scripts/download_spacy_model.sh
-
-COPY ./.env.docker ./.env
-
-CMD ["python", "noisemon"]

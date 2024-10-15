@@ -1,6 +1,7 @@
 """
 One and only module that opetares with faiss index and performs vector search
 """
+
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -13,15 +14,23 @@ from noisemon.logger import logger
 from noisemon.domain.services.repository.repository import Repository
 
 cwd = Path(__file__).resolve().parent
+
+
 def validate_input_data(data):
-    assert isinstance(data, np.ndarray), f"Input data must be `np.ndarray` but it is {type(data)}"
-    assert data.dtype == np.float32, f"Tensor shall have dtype np.float32, but has {data.dtype}"
+    assert isinstance(
+        data, np.ndarray
+    ), f"Input data must be `np.ndarray` but it is {type(data)}"
+    assert (
+        data.dtype == np.float32
+    ), f"Tensor shall have dtype np.float32, but has {data.dtype}"
+
 
 @dataclass
 class MemoryData:
     entity_qid: str
     span: str
     vector: list[float]
+
 
 class RepositoryLocalImpl(Repository):
     memory_path = cwd / "entity_linker_memory.parquet"
@@ -31,9 +40,9 @@ class RepositoryLocalImpl(Repository):
     index_dataframe: pd.DataFrame | None = None
     entity_groups = None
     memory_columns = ["entity_qid", "span", "vector"]
+
     def __init__(self, k_neighbors: int = 5):
         self.k_neighbors = k_neighbors
-
 
     def initialize(self):
         logger.debug("Vector loading has been launched")
@@ -63,7 +72,9 @@ class RepositoryLocalImpl(Repository):
         self.vector_index = faiss.IndexFlatIP(self.number_of_dimensions)
         self.vector_index.add(tensor)
 
-        logger.info(f"Index trained: {self.vector_index.is_trained}, number of vectors: {self.vector_index.ntotal}")
+        logger.info(
+            f"Index trained: {self.vector_index.is_trained}, number of vectors: {self.vector_index.ntotal}"
+        )
         logger.debug("EntityLinker initialized")
 
     def find_closest_indices(self, vector) -> list[int]:
@@ -77,12 +88,10 @@ class RepositoryLocalImpl(Repository):
         return I.astype(int).tolist()
 
     def get_entity_by_vector_index(self, index: int) -> EntityData | None:
-        if not index >= 0: return None
+        if not index >= 0:
+            return None
         entity_qid = self.index_dataframe.loc[index]["entity_qid"]
         return EntityData(entity_qid=entity_qid)
-
-
-
 
     def get_entity_aliases(self, entity: EntityData) -> list[str]:
         return self.entity_groups.get_group(entity.entity_qid)["span"].unique().tolist()

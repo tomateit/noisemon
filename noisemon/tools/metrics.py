@@ -1,9 +1,14 @@
 from typing import List
 from noisemon.domain.models.entity_span import EntitySpan
 
-def calculate_partial_match_f1_score(ground_truth_entities: List[EntitySpan], predicted_entities: List[EntitySpan]):
+
+def calculate_partial_match_f1_score(
+    ground_truth_entities: List[EntitySpan], predicted_entities: List[EntitySpan]
+):
     # Convert ground truth and predicted entities to sets for faster lookup
-    ground_truth_set = {(entity.span_start, entity.span_end): entity for entity in ground_truth_entities}
+    ground_truth_set = {
+        (entity.span_start, entity.span_end): entity for entity in ground_truth_entities
+    }
     {(entity.span_start, entity.span_end): entity for entity in predicted_entities}
 
     # Initialize counters for true positives, false positives, and false negatives
@@ -35,8 +40,20 @@ def calculate_partial_match_f1_score(ground_truth_entities: List[EntitySpan], pr
     false_negatives = len(ground_truth_entities) - true_positives
 
     # Calculate precision, recall, and F1 score
-    precision = true_positives / (true_positives + false_positives) if (true_positives + false_positives) > 0 else 0
-    recall = true_positives / (true_positives + false_negatives) if (true_positives + false_negatives) > 0 else 0
-    f1_score = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+    precision = (
+        true_positives / (true_positives + false_positives)
+        if (true_positives + false_positives) > 0
+        else 0
+    )
+    recall = (
+        true_positives / (true_positives + false_negatives)
+        if (true_positives + false_negatives) > 0
+        else 0
+    )
+    f1_score = (
+        (2 * precision * recall) / (precision + recall)
+        if (precision + recall) > 0
+        else 0
+    )
 
     return f1_score

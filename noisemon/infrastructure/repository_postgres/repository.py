@@ -17,7 +17,10 @@ from .database_models import (
     mention_dataclass_to_model,
     document_model_to_dataclass,
     document_dataclass_to_model,
+    resource_dataclass_to_model,
+    resource_model_to_dataclass,
 )
+from ...domain.models.resource import ResourceData
 
 
 class RepositoryPostgresImpl(Repository):
@@ -45,8 +48,9 @@ class RepositoryPostgresImpl(Repository):
             mention = mention_model_to_dataclass(mention)
         return mention
 
-
-    def get_similar_mentions(self, mention: MentionData, max_mentions: int = 20) -> list[PersistedMentionData]:
+    def get_similar_mentions(
+        self, mention: MentionData, max_mentions: int = 20
+    ) -> list[PersistedMentionData]:
         statement = (
             select(MentionModel)
             .order_by(MentionModel.vector.max_inner_product(mention.vector))
@@ -59,11 +63,23 @@ class RepositoryPostgresImpl(Repository):
 
     def get_entity_aliases_by_qid(self, qid: EntityQID) -> list[str]:
         entity_qid_str = str(qid)
-        statement = select(distinct(MentionModel.span)).filter_by(entity_qid=entity_qid_str)
+        statement = select(distinct(MentionModel.span)).filter_by(
+            entity_qid=entity_qid_str
+        )
         results = self.session.scalars(statement).all()
-        results = [str(r) for r in results] # does not seem necessary
+        results = [str(r) for r in results]  # does not seem necessary
         return results
 
+    def persist_new_resource(self, resource: ResourceData):
+        new_resource_model = resource_dataclass_to_model(resource)
+        try:
+            with self.session.begin_nested():
+                self.session.add(new_resource_model)
+            self.session.commit()
+        except IntegrityError:
+            self.session.rollback()
+
+        return resource_model_to_dataclass(new_resource_model)
 
     def persist_new_document(self, document: DocumentData) -> PersistedDocumentData:
         new_document_model = document_dataclass_to_model(document)
@@ -74,15 +90,16 @@ class RepositoryPostgresImpl(Repository):
             self.session.commit()
         except IntegrityError:
             self.session.rollback()
-            # we can safely ignore primary key violation if it is externally generated
-            if document.document_id is None:
-                raise
 
         result = document_model_to_dataclass(new_document_model)
         return result
 
-    def persist_new_mention(self, mention: MentionData, document: PersistedDocumentData) -> PersistedMentionData:
-        assert document.document_id is not None, "Only persisted documents are acceptable"
+    def persist_new_mention(
+        self, mention: MentionData, document: PersistedDocumentData
+    ) -> PersistedMentionData:
+        assert (
+            document.document_id is not None
+        ), "Only persisted documents are acceptable"
         if mention.document_id != document.document_id:
             raise ValueError("Document ID do not match")
 
@@ -96,7 +113,9 @@ class RepositoryPostgresImpl(Repository):
         result = mention_dataclass_to_model(new_mention)
         return result
 
-    def get_mentions_by_document_id(self, document_id: str) -> list[PersistedMentionData]:
+    def get_mentions_by_document_id(
+        self, document_id: str
+    ) -> list[PersistedMentionData]:
         statement = select(MentionModel).filter_by(document_id=document_id)
         response = self.session.scalars(statement)
         result = [mention_model_to_dataclass(m) for m in response]
@@ -113,7 +132,6 @@ class RepositoryPostgresImpl(Repository):
             self.session.rollback()
 
         return entity
-
 
 
 # def get_all_active_vectors(db: Session) -> Optional[np.ndarray]:

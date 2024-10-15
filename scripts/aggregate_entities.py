@@ -1,3 +1,4 @@
+import json
 from dataclasses import asdict
 from pathlib import Path
 
@@ -9,16 +10,18 @@ from tqdm import tqdm
 from noisemon.domain.models.document import DocumentData, PersistedDocumentData
 from noisemon.domain.models.entity import EntityData
 from noisemon.domain.models.qid import EntityQID
+from noisemon.domain.models.resource import ResourceDataTO
 from noisemon.settings import settings
 from noisemon.domain.models.mention import MentionData
-from noisemon.infrastructure.language_representation.contextual_embedder import ContextualEmbedderLocalImpl
+from noisemon.infrastructure.language_vectorization.contextual_embedder import ContextualEmbedderLocalImpl
 from noisemon.infrastructure.repository_postgres.repository import RepositoryPostgresImpl
 
 
-def main(text_dataframe_path: Path, mentions_dataframe_path: Path):
+def main(dataset_path: Path):
     # IMPORT DATA
-    texts_df = pd.read_parquet(text_dataframe_path)
-    mentions_df = pd.read_parquet(mentions_dataframe_path)
+    texts_df = pd.read_parquet(dataset_path / "texts.parquet")
+    mentions_df = pd.read_parquet(dataset_path / "mentions.parquet")
+    resource_description = ResourceDataTO.model_validate(json.loads(Path(dataset_path / "resource.json").read_text())).to_dataclass()
     mention_groups = mentions_df.groupby("text_id")
     pbar = tqdm(total=len(texts_df))
 
@@ -26,12 +29,15 @@ def main(text_dataframe_path: Path, mentions_dataframe_path: Path):
     encoder = ContextualEmbedderLocalImpl(device=torch.device("cuda:0"))
     repository = RepositoryPostgresImpl(settings.DATABASE_URI)
 
+    resource = repository.persist_new_resource(resource_description)
+    assert resource.resource_id is not None
+
     memory_buffer = []
     for idx, text_row in texts_df.iterrows():
         # text_row: original_text, id
         new_document = DocumentData(
             text=text_row["original_text"],
-            document_id=text_row["text_id"],
+            document_tag=text_row["text_id"],
         )
         document: PersistedDocumentData = repository.persist_new_document(new_document)
 

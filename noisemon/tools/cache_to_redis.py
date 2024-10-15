@@ -2,11 +2,13 @@ from typing import Union
 import redis
 import json
 
-def get_cacher(redis_params, EXPIRE=60*60*24):
+
+def get_cacher(redis_params, EXPIRE=60 * 60 * 24):
     """
     EXPIRE is in seconds
     """
     r = redis.Redis(**redis_params)
+
     def arguments_layer(key_argument_position=0):
         def decorator(function):
             # print(f"decorator got {function}")
@@ -26,6 +28,9 @@ def get_cacher(redis_params, EXPIRE=60*60*24):
                     else:
                         r.set(key, value, ex=EXPIRE)
                     return value
+
             return wrapper
+
         return decorator
+
     return arguments_layer

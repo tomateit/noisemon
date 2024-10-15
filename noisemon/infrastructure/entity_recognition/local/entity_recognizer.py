@@ -6,10 +6,13 @@ from transformers import AutoModelForTokenClassification, AutoTokenizer
 from transformers import pipeline
 
 from noisemon.domain.models.entity_span import EntitySpan
-from noisemon.domain.services.entity_recognition.entity_recognizer import EntityRecognizer
+from noisemon.domain.services.entity_recognition.entity_recognizer import (
+    EntityRecognizer,
+)
 from noisemon.logger import logger
 
 logger = logger.getChild(__name__)
+
 
 @dataclass
 class HFEntity:
@@ -22,9 +25,7 @@ class HFEntity:
 
 def hf_entity_to_entity_span(hf_entity: HFEntity) -> EntitySpan:
     return EntitySpan(
-        span_start=hf_entity.start,
-        span_end=hf_entity.end,
-        span=hf_entity.word
+        span_start=hf_entity.start, span_end=hf_entity.end, span=hf_entity.word
     )
 
 
@@ -54,11 +55,7 @@ def strip_whitespaces(datum: HFEntity, text: str) -> HFEntity:
     if datum.word.startswith(" "):
         datum = deepcopy(datum)
         word = datum.word[1:]
-        start = text.index(
-            word,
-            max([datum.start - 2, 0]),
-            datum.end + 2
-        )
+        start = text.index(word, max([datum.start - 2, 0]), datum.end + 2)
         end = start + len(word)
 
         datum = HFEntity(
@@ -82,7 +79,7 @@ class EntityRecognizerLocalImpl(EntityRecognizer):
             model=self.model,
             tokenizer=self.tokenizer,
             aggregation_strategy="simple",
-            device=device
+            device=device,
         )
 
     def recognize_entities(self, text):
@@ -90,8 +87,9 @@ class EntityRecognizerLocalImpl(EntityRecognizer):
         output: list[HFEntity] = [HFEntity(**e) for e in output]
         output_merged = merge_consecutive(output)
         output_stripped = [strip_whitespaces(d, text=text) for d in output_merged]
-        result = [hf_entity_to_entity_span(e) for e in output_stripped if e.entity_group == "ORG"]
+        result = [
+            hf_entity_to_entity_span(e)
+            for e in output_stripped
+            if e.entity_group == "ORG"
+        ]
         return result
-
-
-

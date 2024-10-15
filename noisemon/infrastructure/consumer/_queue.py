@@ -47,7 +47,6 @@ class Queue:
     def get_message(self):
         self.channel.basic_get("test")
 
-
     def gracefully_shutdown(self):
         # Cancel the consumer and return any pending messages
         logger.info("Shutting down bus adapter")

@@ -62,7 +62,9 @@ class Wikidata:
         Given ticker, lookup for aliases and return em with respect to
         entity QID, e.g. Dict[QID, List of aliases (unique)]
         """
-        logger.debug(f"Performing wikidata entity aliases lookup given ticker: {ticker}")
+        logger.debug(
+            f"Performing wikidata entity aliases lookup given ticker: {ticker}"
+        )
         query = """
         SELECT DISTINCT ?id ?idLabel ?alias WHERE {
             SERVICE wikibase:label { bd:serviceParam wikibase:language "ru,en". }

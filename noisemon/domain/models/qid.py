@@ -1,5 +1,6 @@
 import regex as re
 
+
 class EntityQID:
     QID_PATTERN = re.compile(r"^Q\d+$")
     WIKIDATA_URL_PATTERN = re.compile(r"^https?://www.wikidata.org/(wiki|entity)/Q\d+$")
@@ -26,4 +27,3 @@ class EntityQID:
             return re.search(r"Q\d+", self.value).group()
         else:
             raise ValueError("Invalid Wikidata QID format")
-
