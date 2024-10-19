@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm import tqdm
 from sklearn.metrics import balanced_accuracy_score
 
-from noisemon.domain.models.entity_span import EntitySpan
+from noisemon.domain.models.entity_span import EntitySpanData
 from noisemon.infrastructure.entity_linking.local.entity_linker import EntityLinkerImpl
 
 
@@ -36,8 +36,8 @@ def evaluate_entity_linking(test_data_dir: Path, whitelist_path: Path):
         if not mentions_group:
             continue
 
-        mentions: list[EntitySpan] = [
-            EntitySpan(
+        mentions: list[EntitySpanData] = [
+            EntitySpanData(
                 span_start=m["span_start"], span_end=m["span_end"], span=m["span"]
             )
             for m in mentions_group

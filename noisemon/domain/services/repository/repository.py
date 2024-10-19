@@ -6,6 +6,7 @@ from noisemon.domain.models.entity import EntityData
 from noisemon.domain.models.mention import MentionData, PersistedMentionData
 from noisemon.domain.models.qid import EntityQID
 from noisemon.domain.models.resource import ResourceData
+from noisemon.domain.models.resource_link import ResourceLinkData, PersistedResourceLinkData
 
 
 class Repository(metaclass=ABCMeta):
@@ -39,10 +40,13 @@ class Repository(metaclass=ABCMeta):
     ) -> list[PersistedMentionData]: ...
 
     @abstractmethod
-    def persist_new_resource(self, resource_id: ResourceData) -> ResourceData: ...
+    def persist_new_resource(self, resource: ResourceData) -> ResourceData: ...
 
     @abstractmethod
-    def persist_new_document(self, document: DocumentData) -> PersistedDocumentData: ...
+    def persist_new_resource_link(self, resource_link: ResourceLinkData) -> PersistedResourceLinkData: ...
+
+    @abstractmethod
+    def persist_new_document(self, document: DocumentData, resource_link: PersistedResourceLinkData) -> PersistedDocumentData: ...
 
     @abstractmethod
     def persist_new_mention(

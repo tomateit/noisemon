@@ -5,7 +5,7 @@ from copy import deepcopy
 from transformers import AutoModelForTokenClassification, AutoTokenizer
 from transformers import pipeline
 
-from noisemon.domain.models.entity_span import EntitySpan
+from noisemon.domain.models.entity_span import EntitySpanData
 from noisemon.domain.services.entity_recognition.entity_recognizer import (
     EntityRecognizer,
 )
@@ -23,8 +23,8 @@ class HFEntity:
     end: int
 
 
-def hf_entity_to_entity_span(hf_entity: HFEntity) -> EntitySpan:
-    return EntitySpan(
+def hf_entity_to_entity_span(hf_entity: HFEntity) -> EntitySpanData:
+    return EntitySpanData(
         span_start=hf_entity.start, span_end=hf_entity.end, span=hf_entity.word
     )
 

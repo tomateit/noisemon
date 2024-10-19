@@ -7,8 +7,9 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="allow",
     )
+    DATABASE_URI: str
     TIMEZONE: str = "UTC"
     ENVIRONMENT: str = "development"
-    DATABASE_URI: str
+    TEXT_VECTORIZATION_MODEL_NAME: str = "Jean-Baptiste/roberta-large-ner-english"
 
 settings = Settings()

@@ -9,7 +9,7 @@ from noisemon.settings import settings
 
 # data
 from noisemon.domain.models.entity import EntityData
-from noisemon.domain.models.entity_span import EntitySpan
+from noisemon.domain.models.entity_span import EntitySpanData
 from noisemon.domain.models.document import DocumentData
 from noisemon.domain.models.mention import MentionData
 

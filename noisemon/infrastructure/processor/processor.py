@@ -1,6 +1,6 @@
 from noisemon.domain.models.document import DocumentData
 from noisemon.domain.models.entity import EntityData
-from noisemon.domain.models.entity_span import EntitySpan
+from noisemon.domain.models.entity_span import EntitySpanData
 from noisemon.domain.models.mention import MentionData
 from noisemon.domain.services.entity_linking.entity_linker import EntityLinker
 from noisemon.domain.services.entity_recognition.entity_recognizer import (
@@ -40,7 +40,7 @@ class ProcessorImpl(Processor):
             return []
 
         # 1. Entity Recognition
-        recognized_entities: list[EntitySpan] = (
+        recognized_entities: list[EntitySpanData] = (
             self.entity_recognizer.recognize_entities(document.text)
         )
         logger.debug(f"Recognized entities: {recognized_entities}")

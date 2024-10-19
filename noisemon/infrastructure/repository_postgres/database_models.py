@@ -13,9 +13,10 @@ from noisemon.domain.models.document import DocumentData, PersistedDocumentData
 
 # from noisemon.domain.models.document_origin import DocumentOrigin
 from noisemon.domain.models.entity import EntityData
-from noisemon.domain.models.mention import PersistedMentionData
+from noisemon.domain.models.mention import PersistedMentionData, MentionData, LinkedMentionData
 from noisemon.domain.models.qid import EntityQID
 from noisemon.domain.models.resource import ResourceTypes, ResourceData
+from noisemon.domain.models.resource_link import ResourceLinkData, PersistedResourceLinkData
 
 
 class Base(DeclarativeBase): ...
@@ -29,13 +30,19 @@ def generate_timestamp():
     return datetime.datetime.now(tz=datetime.UTC)
 
 
-class DocumentModel(Base):
+class DocumentORMModel(Base):
     __tablename__ = "documents"
     document_id: Mapped[uuid.UUID] = Column(
         PostgresUUID(as_uuid=True),
         name="document_id",
         primary_key=True,
         default=generate_uuid,
+    )
+
+    resource_link_id: Mapped[uuid.UUID] = Column(
+        PostgresUUID(as_uuid=True),
+        name="resource_link_id",
+        nullable=False,
     )
 
     # signify stages of source content processing, from the rawest possible (why not bytes?) to the most processed
@@ -45,11 +52,11 @@ class DocumentModel(Base):
     text: Mapped[str | None] = Column(TEXT, nullable=True)
 
     mentions = relationship(
-        "MentionModel", back_populates="document", cascade="all,delete"
+        "MentionORMModel", back_populates="document", cascade="all,delete"
     )
 
 
-class MentionModel(Base):
+class MentionORMModel(Base):
     __tablename__ = "mentions"
     mention_id: Mapped[uuid.UUID] = Column(
         PostgresUUID(as_uuid=True),
@@ -73,20 +80,20 @@ class MentionModel(Base):
 
     vector = Column(Vector, name="vector", nullable=True)  # (d,)
 
-    entity = relationship("EntityModel", back_populates="mentions")
-    document = relationship("DocumentModel", back_populates="mentions")
+    # entity = relationship("EntityModel", back_populates="mentions")
+    document = relationship("DocumentORMModel", back_populates="mentions")
 
     def __repr__(self):
         return f"Mention[span={self.span},qid={self.entity_qid}]"
 
 
-class EntityModel(Base):
+class EntityORMModel(Base):
     __tablename__ = "entities"
     entity_qid: Mapped[str] = Column(TEXT, name="entity_qid", primary_key=True)
     label: Mapped[str | None] = Column(TEXT, unique=False, nullable=True)
     description: Mapped[str | None] = Column(TEXT, unique=False, nullable=True)
 
-    mentions = relationship("MentionModel", back_populates="entity")
+    # mentions = relationship("MentionModel", back_populates="entity")
 
     def __repr__(self):
         return f"EntityModel[qid={self.entity_qid}]"
@@ -109,9 +116,12 @@ class ResourceLinkORMModel(Base):
     )
     name: Mapped[str] = Column(TEXT, unique=False, nullable=True)
     uri: Mapped[str] = Column(TEXT, unique=True, nullable=True)
+    publication_timestamp: Mapped[datetime.datetime] = Column(
+        TIMESTAMP(timezone=True), nullable=False
+    )
 
 
-class ResourceModel(Base):
+class ResourceORMModel(Base):
     __tablename__ = "resources"
     resource_id: Mapped[uuid.UUID] = Column(
         PostgresUUID(as_uuid=True),
@@ -129,8 +139,8 @@ class ResourceModel(Base):
     )
 
 
-def resource_dataclass_to_model(o) -> ResourceModel:
-    return ResourceModel(
+def resource_dataclass_to_model(o: ResourceData) -> ResourceORMModel:
+    return ResourceORMModel(
         resource_id=o.resource_id,
         resource_name=o.resource_name,
         resource_type=o.resource_type,
@@ -139,7 +149,7 @@ def resource_dataclass_to_model(o) -> ResourceModel:
     )
 
 
-def resource_model_to_dataclass(o) -> ResourceData:
+def resource_model_to_dataclass(o: ResourceORMModel) -> ResourceData:
     return ResourceData(
         resource_id=o.resource_id,
         resource_name=o.resource_name,
@@ -148,6 +158,22 @@ def resource_model_to_dataclass(o) -> ResourceData:
         created_at=o.created_at,
     )
 
+def resource_link_dataclass_to_model(o: ResourceLinkData) -> ResourceLinkORMModel:
+    return ResourceLinkORMModel(
+        resource_id=o.resource_id,
+        name=o.name,
+        uri=o.uri,
+        publication_timestamp=o.publication_timestamp,
+    )
+
+def resource_link_model_to_dataclass(o: ResourceLinkORMModel) -> PersistedResourceLinkData:
+    return PersistedResourceLinkData(
+        resource_id=o.resource_id,
+        name=o.name,
+        uri=o.uri,
+        publication_timestamp=o.publication_timestamp,
+        resource_link_id=o.resource_link_id,
+    )
 
 def entity_model_to_dataclass(o) -> EntityData:
     return EntityData(
@@ -157,8 +183,8 @@ def entity_model_to_dataclass(o) -> EntityData:
     )
 
 
-def entity_dataclass_to_model(o: EntityData) -> EntityModel:
-    return EntityModel(
+def entity_dataclass_to_model(o: EntityData) -> EntityORMModel:
+    return EntityORMModel(
         entity_qid=str(o.entity_qid),
         label=o.label,
         description=o.description,
@@ -167,6 +193,7 @@ def entity_dataclass_to_model(o: EntityData) -> EntityModel:
 
 def document_model_to_dataclass(o) -> PersistedDocumentData:
     return PersistedDocumentData(
+        resource_link_id=o.resource_link_id,
         document_id=o.document_id,
         text=o.text,
         raw_text=o.raw_text,
@@ -175,11 +202,11 @@ def document_model_to_dataclass(o) -> PersistedDocumentData:
     )
 
 
-def document_dataclass_to_model(o: DocumentData) -> DocumentModel:
-    return DocumentModel(
+def document_dataclass_to_model(o: DocumentData, resource_link: PersistedResourceLinkData) -> DocumentORMModel:
+    return DocumentORMModel(
         text=o.text,
         raw_text=o.raw_text,
-        document_id=o.document_id,
+        resource_link_id=resource_link.resource_link_id,
     )
 
 
@@ -189,7 +216,7 @@ def entity_dataclass_to_dict(o: EntityData) -> dict:
     )
 
 
-def entity_model_to_dict(o: EntityModel) -> dict:
+def entity_model_to_dict(o: EntityORMModel) -> dict:
     return dict(
         entity_qid=o.entity_qid,
     )
@@ -207,13 +234,12 @@ def mention_model_to_dataclass(o) -> PersistedMentionData:
     )
 
 
-def mention_dataclass_to_model(o) -> MentionModel:
-    return MentionModel(
+def mention_dataclass_to_model(o: MentionData | LinkedMentionData, document: PersistedDocumentData) -> MentionORMModel:
+    return MentionORMModel(
         span=o.span,
         span_start=o.span_start,
         span_end=o.span_end,
-        document_id=o.document_id,
-        mention_id=o.mention_id,
+        document_id=document.document_id,
         entity_qid=str(o.entity_qid),
         vector=o.vector,
     )

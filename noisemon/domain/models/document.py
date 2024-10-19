@@ -4,8 +4,7 @@ from dataclasses import dataclass
 
 @dataclass(kw_only=True)
 class DocumentData:
-    resource_link_id: uuid.UUID
-    document_id: uuid.UUID | None = None
+    # document_id: uuid.UUID | None = None
     raw_content: str | None = None  # original document data
     content: str | None = None  # processed document data
     raw_text: str | None = (
@@ -17,3 +16,4 @@ class DocumentData:
 @dataclass(kw_only=True)
 class PersistedDocumentData(DocumentData):
     document_id: uuid.UUID
+    resource_link_id: uuid.UUID

@@ -6,7 +6,7 @@ from noisemon.domain.services.entity_recognition.entity_recognizer import (
 from noisemon.infrastructure.entity_recognition.local.entity_recognizer import (
     EntityRecognizerLocalImpl,
 )
-from noisemon.domain.models.entity_span import EntitySpan
+from noisemon.domain.models.entity_span import EntitySpanData
 from noisemon.tools.similarity import similarity
 
 
@@ -19,23 +19,23 @@ test_data = [
     pytest.param(
         "Apple Inc. is a leading tech company.",
         [
-            EntitySpan(span="Apple Inc.", span_start=0, span_end=10),
+            EntitySpanData(span="Apple Inc.", span_start=0, span_end=10),
         ],
         id="Test: 1 entity",
     ),
     pytest.param(
         "Apple Inc. is a leading tech company. Microsoft Corporation is also well-known.",
         [
-            EntitySpan(span="Apple Inc.", span_start=0, span_end=10),
-            EntitySpan(span="Microsoft Corporation", span_start=38, span_end=59),
+            EntitySpanData(span="Apple Inc.", span_start=0, span_end=10),
+            EntitySpanData(span="Microsoft Corporation", span_start=38, span_end=59),
         ],
         id="Test: 2 entities",
     ),
     pytest.param(
         "Amazon.com is an e-commerce giant. Google LLC is a tech company.",
         [
-            EntitySpan(span="Amazon.com", span_start=0, span_end=10),
-            EntitySpan(span="Google LLC", span_start=35, span_end=45),
+            EntitySpanData(span="Amazon.com", span_start=0, span_end=10),
+            EntitySpanData(span="Google LLC", span_start=35, span_end=45),
         ],
         id="Test: 2 entities",
     ),

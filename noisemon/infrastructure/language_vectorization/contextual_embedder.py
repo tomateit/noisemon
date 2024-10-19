@@ -2,7 +2,7 @@ import spacy_alignments as tokenizations
 import torch
 from transformers import AutoTokenizer, AutoModel
 
-from noisemon.domain.models.entity_span import EntitySpan
+from noisemon.domain.models.entity_span import EntitySpanData
 from noisemon.domain.services.language_representation.contextual_embedder import (
     ContextualEmbedder,
 )
@@ -33,7 +33,7 @@ class ContextualEmbedderLocalImpl(ContextualEmbedder):
         self.model.to(device)
 
     def get_char_span_vectors(
-        self, text: str, char_spans: list[EntitySpan]
+        self, text: str, char_spans: list[EntitySpanData]
     ) -> list[torch.Tensor]:
         encoded_text = self.tokenizer(
             [text], truncation=True, max_length=512, return_tensors="pt"

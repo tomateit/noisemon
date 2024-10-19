@@ -1,16 +1,19 @@
+import uuid
+
 from sqlalchemy import create_engine, select, distinct
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import sessionmaker
 
 from noisemon.domain.services.repository.repository import Repository
 from noisemon.domain.models.entity import EntityData
-from noisemon.domain.models.mention import MentionData, PersistedMentionData
+from noisemon.domain.models.mention import MentionData, PersistedMentionData, LinkedMentionData
 from noisemon.domain.models.document import DocumentData, PersistedDocumentData
 from noisemon.domain.models.qid import EntityQID
 from .database_models import (
-    EntityModel,
-    MentionModel,
-    DocumentModel,
+    EntityORMModel,
+    MentionORMModel,
+    DocumentORMModel,
+    ResourceORMModel,
     entity_model_to_dataclass,
     entity_dataclass_to_model,
     mention_model_to_dataclass,
@@ -19,31 +22,41 @@ from .database_models import (
     document_dataclass_to_model,
     resource_dataclass_to_model,
     resource_model_to_dataclass,
+    resource_link_dataclass_to_model,
+    resource_link_model_to_dataclass,
 )
 from ...domain.models.resource import ResourceData
+from ...domain.models.resource_link import ResourceLinkData, PersistedResourceLinkData
+from ...schemas.schemas import MentionSchema
 
 
 class RepositoryPostgresImpl(Repository):
-    def __init__(self, database_uri):
+    def __init__(self, database_uri: str):
         self.engine = create_engine(database_uri)
         Session = sessionmaker(bind=self.engine)
         self.session = Session()
 
+    def get_resource_by_id(self, resource_id: uuid.UUID) -> ResourceData | None:
+        resource = self.session.get(ResourceORMModel, resource_id)
+        if resource is not None:
+            resource = resource_model_to_dataclass(resource)
+        return resource
+
     def get_entity_by_qid(self, entity_qid: EntityQID) -> EntityData | None:
         entity_qid_str = str(entity_qid)
-        entity = self.session.get(EntityModel, entity_qid_str)
+        entity = self.session.get(EntityORMModel, entity_qid_str)
         if entity is not None:
             entity = entity_model_to_dataclass(entity)
         return entity
 
     def get_document_by_id(self, document_id: str) -> PersistedDocumentData | None:
-        document = self.session.get(DocumentModel, document_id)
+        document = self.session.get(DocumentORMModel, document_id)
         if document is not None:
             document = document_model_to_dataclass(document)
         return document
 
     def get_mention_by_id(self, mention_id: str) -> PersistedMentionData | None:
-        mention = self.session.get(MentionModel, mention_id)
+        mention = self.session.get(MentionORMModel, mention_id)
         if mention is not None:
             mention = mention_model_to_dataclass(mention)
         return mention
@@ -52,8 +65,8 @@ class RepositoryPostgresImpl(Repository):
         self, mention: MentionData, max_mentions: int = 20
     ) -> list[PersistedMentionData]:
         statement = (
-            select(MentionModel)
-            .order_by(MentionModel.vector.max_inner_product(mention.vector))
+            select(MentionORMModel)
+            .order_by(MentionORMModel.vector.max_inner_product(mention.vector))
             .limit(max_mentions)
         )
         with self.session.begin_nested():
@@ -63,12 +76,20 @@ class RepositoryPostgresImpl(Repository):
 
     def get_entity_aliases_by_qid(self, qid: EntityQID) -> list[str]:
         entity_qid_str = str(qid)
-        statement = select(distinct(MentionModel.span)).filter_by(
+        statement = select(distinct(MentionORMModel.span)).filter_by(
             entity_qid=entity_qid_str
         )
         results = self.session.scalars(statement).all()
         results = [str(r) for r in results]  # does not seem necessary
         return results
+
+    def get_mentions_by_document_id(
+        self, document_id: str
+    ) -> list[PersistedMentionData]:
+        statement = select(MentionORMModel).filter_by(document_id=document_id)
+        response = self.session.scalars(statement)
+        result = [mention_model_to_dataclass(m) for m in response]
+        return result
 
     def persist_new_resource(self, resource: ResourceData):
         new_resource_model = resource_dataclass_to_model(resource)
@@ -81,8 +102,19 @@ class RepositoryPostgresImpl(Repository):
 
         return resource_model_to_dataclass(new_resource_model)
 
-    def persist_new_document(self, document: DocumentData) -> PersistedDocumentData:
-        new_document_model = document_dataclass_to_model(document)
+    def persist_new_resource_link(self, resource_link: ResourceLinkData):
+        new_resource_link_model = resource_link_dataclass_to_model(resource_link)
+        try:
+            with self.session.begin_nested():
+                self.session.add(new_resource_link_model)
+            self.session.commit()
+        except IntegrityError:
+            self.session.rollback()
+
+        return resource_link_model_to_dataclass(new_resource_link_model)
+
+    def persist_new_document(self, document: DocumentData, resource_link: PersistedResourceLinkData) -> PersistedDocumentData:
+        new_document_model = document_dataclass_to_model(document, resource_link)
 
         try:
             with self.session.begin_nested():
@@ -95,31 +127,20 @@ class RepositoryPostgresImpl(Repository):
         return result
 
     def persist_new_mention(
-        self, mention: MentionData, document: PersistedDocumentData
+        self, mention: LinkedMentionData | MentionData, document: PersistedDocumentData
     ) -> PersistedMentionData:
         assert (
             document.document_id is not None
         ), "Only persisted documents are acceptable"
-        if mention.document_id != document.document_id:
-            raise ValueError("Document ID do not match")
 
-        if mention.document_id is None:
-            mention.document_id = document.document_id
-
-        new_mention = mention_dataclass_to_model(mention)
+        new_mention = mention_dataclass_to_model(mention, document)
         with self.session.begin_nested():
             self.session.add(new_mention)
         self.session.commit()
-        result = mention_dataclass_to_model(new_mention)
+        result = mention_model_to_dataclass(new_mention)
         return result
 
-    def get_mentions_by_document_id(
-        self, document_id: str
-    ) -> list[PersistedMentionData]:
-        statement = select(MentionModel).filter_by(document_id=document_id)
-        response = self.session.scalars(statement)
-        result = [mention_model_to_dataclass(m) for m in response]
-        return result
+
 
     def persist_new_entity(self, entity: EntityData) -> EntityData:
         new_entity = entity_dataclass_to_model(entity)

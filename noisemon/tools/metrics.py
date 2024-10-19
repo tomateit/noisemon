@@ -1,9 +1,9 @@
 from typing import List
-from noisemon.domain.models.entity_span import EntitySpan
+from noisemon.domain.models.entity_span import EntitySpanData
 
 
 def calculate_partial_match_f1_score(
-    ground_truth_entities: List[EntitySpan], predicted_entities: List[EntitySpan]
+    ground_truth_entities: List[EntitySpanData], predicted_entities: List[EntitySpanData]
 ):
     # Convert ground truth and predicted entities to sets for faster lookup
     ground_truth_set = {
