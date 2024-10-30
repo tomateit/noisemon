@@ -5,6 +5,7 @@ from sqlalchemy import select, create_engine
 import torch
 import typer
 import numpy as np
+from sqlalchemy.exc import DataError
 from sqlalchemy.orm import Session
 from tqdm import tqdm
 
@@ -28,8 +29,8 @@ def main():
     engine = create_engine(database_uri)
     connection = engine.connect()
     db = Session(connection)
-    limit = 1000
-    # count_statement = select(func.count(DocumentModel.id)).join(DocumentModel.mentions).limit(10)
+    limit = 60000
+    # count_statement = select(func.count(MentionORMModel)).where(MentionORMModel.vector == None)
     # documents_count = db.scalar(count_statement)
     documents_count = limit
 
@@ -40,9 +41,11 @@ def main():
         .join(DocumentORMModel.mentions)
         .limit(limit)
     )
-    statement = statement.execution_options(yield_per=1000)
+    # statement = statement.execution_options(yield_per=1000)
     result = db.scalars(statement)
     pbar = tqdm(total=documents_count)
+    success = 0
+    failure = 0
     for document_model in result:
         document_model: DocumentORMModel
         mentions: list[MentionORMModel] = document_model.mentions
@@ -54,14 +57,23 @@ def main():
             )
             for m in mentions
         ]
-        mention_vectors: list[torch.Tensor] = embedder.get_char_span_vectors(document_model.text, spans)
+        mention_vectors: list[torch.Tensor] = embedder.get_char_span_vectors(document_model.raw_text or document_model.text, spans)
         mention_vectors: list[np.ndarray] = [t.numpy() for t in mention_vectors]
 
-        for mention, vector in zip(mentions, mention_vectors):
-            with db.begin_nested():
-                mention.vector = vector
+        try:
+            for mention, vector in zip(mentions, mention_vectors):
+                with db.begin_nested():
+                    mention.vector = vector
 
+            db.commit()
+        except DataError as ex:
+            logger.exception(ex)
+            failure += 1
+            pbar.update(1)
+            continue
+        success += 1
         pbar.update(1)
+        pbar.set_description(f"SUCC: [{success}], FAIL: [{failure}]")
 
     logger.info("Vectors are stored in database")
     connection.close()

@@ -3,7 +3,7 @@ import uuid
 
 import sqlalchemy
 import uuid_utils
-from sqlalchemy import Column, ForeignKey, TIMESTAMP
+from sqlalchemy import Column, ForeignKey, TIMESTAMP, Integer
 from sqlalchemy.dialects.postgresql import TEXT
 from sqlalchemy.dialects.postgresql import UUID as PostgresUUID
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped
@@ -75,8 +75,8 @@ class MentionORMModel(Base):
     )
 
     span: Mapped[str] = Column(TEXT, name="span", nullable=False)  # textual form
-    span_start: Mapped[int] = Column(TEXT, name="span_start", nullable=False)
-    span_end: Mapped[int] = Column(TEXT, name="span_end", nullable=False)
+    span_start: Mapped[int] = Column(Integer, name="span_start", nullable=False)
+    span_end: Mapped[int] = Column(Integer, name="span_end", nullable=False)
 
     vector = Column(Vector, name="vector", nullable=True)  # (d,)
 
@@ -84,7 +84,7 @@ class MentionORMModel(Base):
     document = relationship("DocumentORMModel", back_populates="mentions")
 
     def __repr__(self):
-        return f"Mention[span={self.span},qid={self.entity_qid}]"
+        return f"Mention(span={self.span},qid='{self.entity_qid}',span_start={self.span_start},span_end={self.span_end})"
 
 
 class EntityORMModel(Base):
@@ -96,7 +96,7 @@ class EntityORMModel(Base):
     # mentions = relationship("MentionModel", back_populates="entity")
 
     def __repr__(self):
-        return f"EntityModel[qid={self.entity_qid}]"
+        return f"EntityModel(qid='{self.entity_qid}')"
 
     # @property
     # def aliases(self) -> set[str]:

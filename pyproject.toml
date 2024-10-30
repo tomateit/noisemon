@@ -7,7 +7,7 @@ packages = [{include = "noisemon"}]
 
 [tool.poetry.dependencies]
 python = ">=3.12"
-regex = "^2021.7.6"
+regex = "^2024.9.11"
 datasets = "^2.13.1"
 einops = "^0.6.1"
 pgvector = "^0.2.3"
@@ -29,7 +29,7 @@ tqdm = "^4.66.5"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^8.3.3"
-ruff = "^0.6.9"
+ruff = "^0.7.1"
 ipykernel = "^6.29.5"
 jupyterlab = "^4.2.5"
 ipywidgets = "^8.1.5"

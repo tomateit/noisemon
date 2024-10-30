@@ -10,6 +10,6 @@ class Settings(BaseSettings):
     DATABASE_URI: str
     TIMEZONE: str = "UTC"
     ENVIRONMENT: str = "development"
-    TEXT_VECTORIZATION_MODEL_NAME: str = "Jean-Baptiste/roberta-large-ner-english"
+    TEXT_VECTORIZATION_MODEL_NAME: str = "intfloat/multilingual-e5-large"
 
 settings = Settings()
